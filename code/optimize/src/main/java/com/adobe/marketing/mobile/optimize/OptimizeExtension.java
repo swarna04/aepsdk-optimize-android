@@ -35,6 +35,8 @@ class OptimizeExtension extends Extension {
     private final Object executorMutex = new Object();
     private ExecutorService executorService;
 
+    private Map<DecisionScope, Proposition> cachedPropositions;
+
     /**
      * Constructor for {@code OptimizeExtension}.
      * <p>
@@ -42,7 +44,9 @@ class OptimizeExtension extends Extension {
      * listeners are registered during the process.
      * <ul>
      *     <li>
-     *         Listener for {@code Event} type {@value OptimizeConstants.EventType#OPTIMIZE} and source {@value OptimizeConstants.EventSource#REQUEST_CONTENT}.
+     *         Listener for {@code Event} type {@value OptimizeConstants.EventType#OPTIMIZE} and source {@value OptimizeConstants.EventSource#REQUEST_CONTENT}
+     *         Listener for {@code Event} type {@value OptimizeConstants.EventType#EDGE} and source {@value OptimizeConstants.EventSource#EDGE_PERSONALIZATION_DECISIONS}
+     *         Listener for {@code Event} type {@value OptimizeConstants.EventType#EDGE} and source {@value OptimizeConstants.EventSource#ERROR_RESPONSE_CONTENT}
      *     </li>
      * </ul>
      *
@@ -50,6 +54,8 @@ class OptimizeExtension extends Extension {
      */
     protected OptimizeExtension(final ExtensionApi extensionApi) {
         super(extensionApi);
+
+        cachedPropositions = new HashMap<>();
 
         final ExtensionErrorCallback<ExtensionError> errorCallback = new ExtensionErrorCallback<ExtensionError>() {
             @Override
@@ -62,6 +68,12 @@ class OptimizeExtension extends Extension {
 
         extensionApi.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.REQUEST_CONTENT,
                 ListenerOptimizeRequestContent.class, errorCallback);
+
+        extensionApi.registerEventListener(OptimizeConstants.EventType.EDGE, OptimizeConstants.EventSource.EDGE_PERSONALIZATION_DECISIONS,
+                ListenerEdgeResponseContent.class, errorCallback);
+
+        extensionApi.registerEventListener(OptimizeConstants.EventType.EDGE, OptimizeConstants.EventSource.ERROR_RESPONSE_CONTENT,
+                ListenerEdgeErrorResponseContent.class, errorCallback);
     }
 
     /**
@@ -180,10 +192,104 @@ class OptimizeExtension extends Extension {
                         }
                     });
 
-                } catch (final Exception ex) {
+                } catch (final Exception e) {
                     MobileCore.log(LoggingMode.WARNING, LOG_TAG,
-                            String.format("Failed to process update propositions request event due to an exception (%s)!", ex.getLocalizedMessage()));
+                            String.format("Failed to process update propositions request event due to an exception (%s)!", e.getLocalizedMessage()));
                 }
+            }
+        });
+    }
+
+    /**
+     * Handles the event with type {@value OptimizeConstants.EventType#EDGE} and source {@value OptimizeConstants.EventSource#EDGE_PERSONALIZATION_DECISIONS}.
+     * <p>
+     * This method caches the propositions, returned in the Edge response, in the SDK. It also dispatches a personalization notification event with the
+     * received propositions.
+     *
+     * @param event incoming {@link Event} object to be processed.
+     */
+    void handleEdgeResponse(final Event event) {
+        getExecutor().execute(new Runnable() {
+              @Override
+              public void run() {
+                  if (event == null || OptimizeUtils.isNullOrEmpty(event.getEventData())) {
+                      MobileCore.log(LoggingMode.DEBUG, OptimizeConstants.LOG_TAG, "Cannot process the Edge personalization:decisions event, event is null or event data is null/ empty.");
+                      return;
+                  }
+                  final Map<String, Object> eventData = event.getEventData();
+
+                  // Verify the Edge response event handle
+                  final String edgeEventHandleType = (String) eventData.get(OptimizeConstants.Edge.EVENT_HANDLE);
+                  if (!OptimizeConstants.Edge.EVENT_HANDLE_TYPE_PERSONALIZATION.equals(edgeEventHandleType)) {
+                      MobileCore.log(LoggingMode.DEBUG, OptimizeConstants.LOG_TAG, "Cannot process the Edge personalization:decisions event, event handle type is not personalization:decisions.");
+                      return;
+                  }
+
+                  final List<Map<String, Object>> payload = (List<Map<String, Object>>) eventData.get(OptimizeConstants.Edge.PAYLOAD);
+                  final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
+                  for (final Map<String, Object> propositionData: payload) {
+                     final Proposition proposition = Proposition.fromEventData(propositionData);
+                     if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getOffers())) {
+                         final DecisionScope scope = new DecisionScope(proposition.getScope());
+                         propositionsMap.put(scope, proposition);
+                     }
+                  }
+
+                  if (OptimizeUtils.isNullOrEmpty(propositionsMap)) {
+                      MobileCore.log(LoggingMode.DEBUG, OptimizeConstants.LOG_TAG, "Cannot process the Edge personalization:decisions event, no propositions with valid offers are present in the Edge response.");
+                      return;
+                  }
+
+                  // Update propositions cache
+                  cachedPropositions.putAll(propositionsMap);
+
+                  final List<Map<String, Object>> propositionsList = new ArrayList<>();
+                  for (final Proposition proposition: propositionsMap.values()) {
+                      propositionsList.add(proposition.toEventData());
+                  }
+                  final Map<String, Object> notificationData = new HashMap<>();
+                  notificationData.put(OptimizeConstants.EventDataKeys.PROPOSITIONS, propositionsList);
+
+                  final Event edgeEvent = new Event.Builder(OptimizeConstants.EventNames.OPTIMIZE_NOTIFICATION,
+                          OptimizeConstants.EventType.OPTIMIZE,
+                          OptimizeConstants.EventSource.NOTIFICATION)
+                          .setEventData(notificationData)
+                          .build();
+
+                  // Dispatch notification event
+                  MobileCore.dispatchEvent(edgeEvent, new ExtensionErrorCallback<ExtensionError>() {
+                      @Override
+                      public void error(final ExtensionError extensionError) {
+                          MobileCore.log(LoggingMode.WARNING, LOG_TAG,
+                                  String.format("Failed to dispatch optimize notification event due to an error (%s)!", extensionError.getErrorName()));
+                      }
+                  });
+              }
+        });
+    }
+
+    /**
+     * Handles the event with type {@value OptimizeConstants.EventType#EDGE} and source {@value OptimizeConstants.EventSource#ERROR_RESPONSE_CONTENT}.
+     * <p>
+     * This method logs the error information, returned in Edge response, specifying error type along with a detail message.
+     *
+     * @param event incoming {@link Event} object to be processed.
+     */
+    void handleEdgeErrorResponse(final Event event) {
+        getExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                if (event == null || OptimizeUtils.isNullOrEmpty(event.getEventData())) {
+                    MobileCore.log(LoggingMode.DEBUG, OptimizeConstants.LOG_TAG, "Cannot process the Edge error response event, event is null or event data is null/ empty.");
+                    return;
+                }
+                final Map<String, Object> eventData = event.getEventData();
+
+                final String errorType = (String) eventData.get(OptimizeConstants.Edge.ErrorKeys.TYPE);
+                final String errorDetail = (String) eventData.get(OptimizeConstants.Edge.ErrorKeys.DETAIL);
+
+                MobileCore.log(LoggingMode.WARNING, OptimizeConstants.LOG_TAG,
+                        String.format("Decisioning Service error! Error type: (%s), detail: (%s)", errorType, errorDetail));
             }
         });
     }

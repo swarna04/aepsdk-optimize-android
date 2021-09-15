@@ -15,6 +15,7 @@ package com.adobe.marketing.mobile.optimize;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.ExtensionApi;
 import com.adobe.marketing.mobile.MobileCore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -32,42 +33,38 @@ import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({OptimizeExtension.class, MobileCore.class, ExtensionApi.class})
-public class ListenerOptimizeRequestContentTests {
+@PrepareForTest({OptimizeExtension.class, ExtensionApi.class})
+public class ListenerEdgeResponseContentTests {
     @Mock
     OptimizeExtension mockOptimizeExtension;
 
     @Mock
     ExtensionApi mockExtensionApi;
 
-    private ListenerOptimizeRequestContent listener;
+    private ListenerEdgeResponseContent listener;
 
     @Before
     public void setup() {
-        listener = spy(new ListenerOptimizeRequestContent(mockExtensionApi,
-                "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent"));
+        listener = spy(new ListenerEdgeResponseContent(mockExtensionApi,
+                "com.adobe.eventType.edge", "personalization:decisions"));
     }
 
     @Test
-    public void testHear_validOptimizeRequestEvent() throws Exception {
+    public void testHear() throws Exception {
         // setup
+        final Map<String, Object> edgeResponseData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/EVENT_DATA_EDGE_RESPONSE_VALID.json"), HashMap.class);
         when(listener.getOptimizeExtension()).thenReturn(mockOptimizeExtension);
-        Map<String, Object> eventData = new HashMap<String, Object>() {
-            {
-                put("requesttype", "updatepropositions");
-            }
-        };
-        Event testEvent = new Event.Builder("Optimize Update Propositions Request",
-                "com.adobe.eventType.optimize",
-                "com.adobe.eventSource.requestContent")
-                .setEventData(eventData)
+        final Event testEvent = new Event.Builder("AEP Response Event Handle",
+                "com.adobe.eventType.edge",
+                "personalization:decisions")
+                .setEventData(edgeResponseData)
                 .build();
 
         // test
         listener.hear(testEvent);
 
         // verify
-        verify(mockOptimizeExtension, Mockito.times(1)).handleUpdatePropositions(testEvent);
+        verify(mockOptimizeExtension, Mockito.times(1)).handleEdgeResponse(testEvent);
     }
 
     @Test
@@ -79,16 +76,16 @@ public class ListenerOptimizeRequestContentTests {
         listener.hear(null);
 
         // verify
-        verify(mockOptimizeExtension, Mockito.never()).handleUpdatePropositions(Mockito.any(Event.class));
+        verify(mockOptimizeExtension, Mockito.never()).handleEdgeResponse(Mockito.any(Event.class));
     }
 
     @Test
     public void testHear_nullEventData() throws Exception {
         // setup
         when(listener.getOptimizeExtension()).thenReturn(mockOptimizeExtension);
-        Event testEvent = new Event.Builder("Optimize Update Propositions Request",
-                "com.adobe.eventType.optimize",
-                "com.adobe.eventSource.requestContent")
+        final Event testEvent = new Event.Builder("AEP Response Event Handle",
+                "com.adobe.eventType.edge",
+                "personalization:decisions")
                 .setEventData(null)
                 .build();
 
@@ -96,16 +93,16 @@ public class ListenerOptimizeRequestContentTests {
         listener.hear(testEvent);
 
         // verify
-        verify(mockOptimizeExtension, Mockito.never()).handleUpdatePropositions(testEvent);
+        verify(mockOptimizeExtension, Mockito.never()).handleEdgeResponse(testEvent);
     }
 
     @Test
     public void testHear_emptyEventData() throws Exception {
         // setup
         when(listener.getOptimizeExtension()).thenReturn(mockOptimizeExtension);
-        Event testEvent = new Event.Builder("Optimize Update Propositions Request",
-                "com.adobe.eventType.optimize",
-                "com.adobe.eventSource.requestContent")
+        final Event testEvent = new Event.Builder("AEP Response Event Handle",
+                "com.adobe.eventType.edge",
+                "personalization:decisions")
                 .setEventData(new HashMap<String, Object>())
                 .build();
 
@@ -113,29 +110,24 @@ public class ListenerOptimizeRequestContentTests {
         listener.hear(testEvent);
 
         // verify
-        verify(mockOptimizeExtension, Mockito.never()).handleUpdatePropositions(testEvent);
+        verify(mockOptimizeExtension, Mockito.never()).handleEdgeResponse(testEvent);
     }
 
     @Test
     public void testHear_nullParentExtension() throws Exception {
         // setup
+        final Map<String, Object> edgeResponseData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/EVENT_DATA_EDGE_RESPONSE_VALID.json"), HashMap.class);
         when(listener.getOptimizeExtension()).thenReturn(null);
-
-        Map<String, Object> eventData = new HashMap<String, Object>() {
-            {
-                put("requesttype", "updatepropositions");
-            }
-        };
-        Event testEvent = new Event.Builder("Optimize Update Propositions Request",
-                "com.adobe.eventType.optimize",
-                "com.adobe.eventSource.requestContent")
-                .setEventData(eventData)
+        final Event testEvent = new Event.Builder("AEP Response Event Handle",
+                "com.adobe.eventType.edge",
+                "personalization:decisions")
+                .setEventData(edgeResponseData)
                 .build();
 
         // test
         listener.hear(testEvent);
 
         // verify
-        verify(mockOptimizeExtension, Mockito.never()).handleUpdatePropositions(testEvent);
+        verify(mockOptimizeExtension, Mockito.never()).handleEdgeResponse(testEvent);
     }
 }

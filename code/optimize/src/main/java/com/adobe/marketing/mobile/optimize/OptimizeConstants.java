@@ -32,6 +32,7 @@ class OptimizeConstants {
         static final String GET_PROPOSITIONS_REQUEST = "Optimize Get Propositions Request";
         static final String TRACK_PROPOSITIONS_REQUEST = "Optimize Track Propositions Request";
         static final String CLEAR_PROPOSITIONS_REQUEST = "Optimize Clear Propositions Request";
+        static final String OPTIMIZE_NOTIFICATION = "Optimize Notification";
         static final String EDGE_PERSONALIZATION_REQUEST = "Edge Optimize Personalization Request";
         static final String OPTIMIZE_RESPONSE = "Optimize Response";
 
@@ -50,7 +51,9 @@ class OptimizeConstants {
         static final String REQUEST_CONTENT = "com.adobe.eventSource.requestContent";
         static final String REQUEST_RESET = "com.adobe.eventSource.requestReset";
         static final String RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
+        static final String ERROR_RESPONSE_CONTENT = "com.adobe.eventSource.errorResponseContent";
         static final String NOTIFICATION = "com.adobe.eventSource.notification";
+        static final String EDGE_PERSONALIZATION_DECISIONS = "personalization:decisions";
 
         private EventSource() {}
     }
@@ -74,9 +77,26 @@ class OptimizeConstants {
         private EventDataValues() {}
     }
 
+    static final class Edge {
+        static final String EXTENSION_NAME = "com.adobe.edge";
+        static final String EVENT_HANDLE = "type";
+        static final String EVENT_HANDLE_TYPE_PERSONALIZATION = "personalization:decisions";
+        static final String PAYLOAD = "payload";
+
+        static final class ErrorKeys {
+            static final String TYPE = "type";
+            static final String DETAIL = "detail";
+
+            private ErrorKeys() {}
+        }
+        private Edge() {}
+    }
+
     static final class Configuration {
         static final String EXTENSION_NAME = "com.adobe.module.configuration";
         static final String OPTIMIZE_OVERRIDE_DATASET_ID = "optimize.datasetId";
+
+        private Configuration() {}
     }
 
     static final class JsonKeys {

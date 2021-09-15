@@ -18,13 +18,11 @@ import com.adobe.marketing.mobile.ExtensionListener;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 
-import java.util.Map;
-
 /**
- * Listens for {@code EventType.Optimize}, {@code EventSource.REQUEST_CONTENT} events and invokes method on the
+ * Listens for {@code EventType.Edge}, {@code EventSource.ERROR_RESPONSE_CONTENT} events and invokes method on the
  * parent {@code OptimizeExtension} for handling the requests.
  */
-class ListenerOptimizeRequestContent extends ExtensionListener {
+public class ListenerEdgeErrorResponseContent extends ExtensionListener {
     /**
      * Constructor.
      *
@@ -32,15 +30,15 @@ class ListenerOptimizeRequestContent extends ExtensionListener {
      * @param type {@link String} containing event type this listener is registered to handle.
      * @param source {@code String} event source this listener is registered to handle.
      */
-    ListenerOptimizeRequestContent(final ExtensionApi extensionApi, final String type, final String source) {
+    ListenerEdgeErrorResponseContent(final ExtensionApi extensionApi, final String type, final String source) {
         super(extensionApi, type, source);
     }
 
     /**
-     * This listener method listens to {@value OptimizeConstants.EventType#OPTIMIZE} and {@value OptimizeConstants.EventSource#REQUEST_CONTENT} events.
+     * This listener method listens to {@value OptimizeConstants.EventType#EDGE} and {@value OptimizeConstants.EventSource#ERROR_RESPONSE_CONTENT} events.
      * <p>
-     * It invokes method on the parent {@link OptimizeExtension} to handle requests for updating propositions in the extension fetched from the Edge network, or
-     * for retrieving previously fetched and cached propositions.
+     * It invokes method on the parent {@link OptimizeExtension} to handle Edge response containing error information when fetching propositions
+     * for requested decision scopes.
      *
      * @param event {@link Event} to be processed.
      */
@@ -48,26 +46,18 @@ class ListenerOptimizeRequestContent extends ExtensionListener {
     public void hear(final Event event) {
         if (event == null || event.getEventData() == null || event.getEventData().isEmpty()) {
             MobileCore.log(LoggingMode.DEBUG, OptimizeConstants.LOG_TAG,
-                    "Ignoring the Optimize request event, either event is null or event data is null/ empty.");
+                    "Ignoring the Edge error response event, either event is null or event data is null/ empty.");
             return;
         }
 
         final OptimizeExtension parentExtension = getOptimizeExtension();
         if (parentExtension == null) {
             MobileCore.log(LoggingMode.DEBUG, OptimizeConstants.LOG_TAG,
-                    "Ignoring the Optimize request event, parent extension for this listener is null.");
+                    "Ignoring the Edge error response event, parent extension for this listener is null.");
             return;
         }
 
-        final Map<String, Object> eventData = event.getEventData();
-        final String requestType = (String) eventData.get(OptimizeConstants.EventDataKeys.REQUEST_TYPE);
-
-        if (requestType.equals(OptimizeConstants.EventDataValues.REQUEST_TYPE_UPDATE)) {
-            parentExtension.handleUpdatePropositions(event);
-        } else {
-            MobileCore.log(LoggingMode.DEBUG, OptimizeConstants.LOG_TAG,
-                    String.format("Ignoring the Optimize request event, provided request type (%s) is not handled by this extension.", requestType));
-        }
+        parentExtension.handleEdgeErrorResponse(event);
     }
 
     /**
