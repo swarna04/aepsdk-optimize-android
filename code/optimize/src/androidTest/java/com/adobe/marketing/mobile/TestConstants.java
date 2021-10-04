@@ -11,23 +11,26 @@
 
 package com.adobe.marketing.mobile;
 
-class TestConstants {
+public class TestConstants {
 
-    final static class EventType {
+    public final static class EventType {
 
-        public static final String MONITOR = "";
+        public static final String MONITOR = "com.adobe.functional.eventType.monitor";
+        public static final String OPTIMIZE = "com.adobe.eventtype.optimize";
+        public static final String EDGE = "com.adobe.eventType.edge";
     }
 
-    final static class EventSource {
+    public final static class EventSource {
 
-        public static final String UNREGISTER = "";
-        public static final String SHARED_STATE_REQUEST = "";
-        public static final String XDM_SHARED_STATE_REQUEST = "";
-        public static final String XDM_SHARED_STATE_RESPONSE = "";
-        public static final String SHARED_STATE_RESPONSE = "";
+        public static final String UNREGISTER = "com.adobe.eventSource.unregister";
+        public static final String SHARED_STATE_REQUEST = "com.adobe.eventSource.sharedStateRequest";
+        public static final String XDM_SHARED_STATE_REQUEST = "com.adobe.eventSource.xdmsharedStateRequest";
+        public static final String XDM_SHARED_STATE_RESPONSE = "com.adobe.eventSource.xdmsharedStateResponse";
+        public static final String SHARED_STATE_RESPONSE = "com.adobe.eventSource.xdmsharedStateResponse";
+        public static final String REQUEST_CONTENT = "com.adobe.eventsource.requestcontent";
     }
 
-    final static class EventDataKey {
+    public final static class EventDataKey {
 
         public static final String STATE_OWNER = "";
     }
