@@ -20,6 +20,8 @@ import android.provider.ContactsContract;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -323,7 +325,6 @@ public class TestHelper {
         return sharedState.isEmpty() ? null : sharedState;
     }
 
-
     /**
      * Pause test execution for the given {@code milliseconds}
      * @param milliseconds the time to sleep the current thread.
@@ -343,5 +344,4 @@ public class TestHelper {
         public CustomApplication() {
         }
     }
-
 }

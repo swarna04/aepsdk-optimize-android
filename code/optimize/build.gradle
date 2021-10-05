@@ -245,6 +245,7 @@ dependencies {
     androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
 
     androidTestImplementation 'com.adobe.marketing.mobile:edgeidentity:1.0.0'
+    androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
 }
 
 tasks.withType(Test) {
