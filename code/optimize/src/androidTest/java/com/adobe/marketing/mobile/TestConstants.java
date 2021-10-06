@@ -30,6 +30,8 @@ public class TestConstants {
         public static final String REQUEST_CONTENT = "com.adobe.eventsource.requestcontent";
         public static final String PERSONALIZATION = "personalization:decisions";
         public static final String NOTIFICATION = "com.adobe.eventSource.notification";
+        public static final String EDGE_ERROR_RESPONSE = "com.adobe.eventSource.errorResponseContent";
+        public static final String RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
     }
 
     public final static class EventDataKey {

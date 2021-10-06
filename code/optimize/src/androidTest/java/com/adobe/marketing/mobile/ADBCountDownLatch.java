@@ -15,7 +15,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class ADBCountDownLatch {
+public class ADBCountDownLatch {
     private final CountDownLatch latch;
     private final int initialCount;
     private final AtomicInteger currentCount;
