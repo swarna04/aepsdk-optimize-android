@@ -13,8 +13,6 @@ package com.adobe.marketing.mobile.optimize;
 
 import static com.adobe.marketing.mobile.TestHelper.resetTestExpectations;
 
-import android.util.JsonReader;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.adobe.marketing.mobile.ADBCountDownLatch;
@@ -32,18 +30,15 @@ import com.adobe.marketing.mobile.TestHelper;
 import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
-import org.mockito.internal.matchers.Any;
 
 import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -75,6 +70,7 @@ public class OptimizeFunctionalTests {
 
         latch.await();
         resetTestExpectations();
+        ServiceProvider.getInstance().setNetworkService(new MockNetworkService(new MockHttpConnecting(200, "{}")));
     }
 
     //1
@@ -91,7 +87,6 @@ public class OptimizeFunctionalTests {
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         MobileCore.updateConfiguration(configData);
-        ServiceProvider.getInstance().setNetworkService(new MockNetworkService(new MockHttpConnecting(200, "{}")));
 
         //Action
         Optimize.updatePropositions(Arrays.asList(new DecisionScope(decisionScopeName)), null, null);
@@ -142,7 +137,6 @@ public class OptimizeFunctionalTests {
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         configData.put("optimize.datasetId", "111111111111111111111111");
         MobileCore.updateConfiguration(configData);
-        ServiceProvider.getInstance().setNetworkService(new MockNetworkService(new MockHttpConnecting(200, "{}")));
 
         Optimize.updatePropositions(Arrays.asList(new DecisionScope(decisionScopeName)), xdmMap, dataMap);
 
@@ -182,7 +176,6 @@ public class OptimizeFunctionalTests {
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         MobileCore.updateConfiguration(configData);
-        ServiceProvider.getInstance().setNetworkService(new MockNetworkService(new MockHttpConnecting(200, "{}")));
 
         //Action
         Optimize.updatePropositions(
@@ -266,11 +259,7 @@ public class OptimizeFunctionalTests {
     public void testUpdatePropositions_ConfigNotAvailable() {
         //Setup
         final String decisionScopeName = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
-        ServiceProvider.getInstance().setNetworkService(new MockNetworkService(new MockHttpConnecting(200, "{}")));
-        Map<String, Object> configData = new HashMap<>();
-        configData.put("edge.configId", null);
-        configData.put("optimize.datasetId", null);
-        MobileCore.updateConfiguration(null);
+        TestHelper.clearSharedState();
 
         try {
             Thread.sleep(1000);
@@ -349,7 +338,6 @@ public class OptimizeFunctionalTests {
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         MobileCore.updateConfiguration(configData);
-        ServiceProvider.getInstance().setNetworkService(new MockNetworkService(new MockHttpConnecting(200, "{}")));
 
         //Action
         Optimize.updatePropositions(
@@ -1463,6 +1451,658 @@ public class OptimizeFunctionalTests {
     //21
     @Test
     public void testTrackPropositions_validPropositionInteractionsForDisplay() {
+        //setup
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        MobileCore.updateConfiguration(configData);
 
+        Offer offer = new Offer.Builder("xcore:personalized-offer:1111111111111111", OfferType.TEXT, "Text Offer!!").build();
+        Proposition proposition = new Proposition(
+                "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                Arrays.asList(offer),
+                "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==",
+                Collections.<String, Object>emptyMap()
+                );
+        offer.propositionReference = new SoftReference<>(proposition);
+
+        //Action
+        TestHelper.resetTestExpectations();
+        offer.displayed();
+
+        //Assert
+        List<Event> optimizeRequestEventsList = null;
+        List<Event> edgeRequestEventList = null;
+        try {
+            optimizeRequestEventsList = TestHelper.getDispatchedEventsWith(TestConstants.EventType.OPTIMIZE, TestConstants.EventSource.REQUEST_CONTENT, 1000);
+            edgeRequestEventList = TestHelper.getDispatchedEventsWith(TestConstants.EventType.EDGE, TestConstants.EventSource.REQUEST_CONTENT, 1000);
+        } catch (InterruptedException e) {
+            Assert.fail("Error in fetching dispatched track events.");
+        }
+
+        Assert.assertNotNull(optimizeRequestEventsList);
+        Assert.assertEquals(1, optimizeRequestEventsList.size());
+        Assert.assertNotNull(edgeRequestEventList);
+        Assert.assertEquals(1, edgeRequestEventList.size());
+
+        Map<String, Object> xdm = (Map<String, Object>) edgeRequestEventList.get(0).getEventData().get("xdm");
+        Assert.assertEquals("decisioning.propositionDisplay", xdm.get("eventType"));
+
+        List<Map<String, Object>> propositionList = (List<Map<String, Object>>) ((Map<String, Object>) ((Map<String, Object>) xdm.get("_experience")).get("decisioning"))
+                .get("propositions");
+        Assert.assertNotNull(propositionList);
+        Assert.assertEquals(1, propositionList.size());
+        Map<String, Object> propositionData = propositionList.get(0);
+        List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) propositionData.get("propositions");
+        Assert.assertNotNull(propositionList);
+        Assert.assertEquals(1, propositionList.size());
+        Map<String, Object> propositionMap = propositionList.get(0);
+        Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", propositionMap.get("id"));
+        Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionMap.get("scope"));
+        Assert.assertTrue(((Map)propositionMap.get("scopeDetails")).isEmpty());
+        List<Map<String, Object>> itemsList = (List<Map<String, Object>>) propositionMap.get("items");
+        Assert.assertNotNull(itemsList);
+        Assert.assertEquals(1, itemsList.size());
+        Assert.assertEquals("xcore:personalized-offer:1111111111111111", itemsList.get(0).get("id"));
+    }
+
+    //22
+    @Test
+    public void testTrackPropositions_validPropositionInteractionsForTap() {
+        //setup
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        MobileCore.updateConfiguration(configData);
+        final String testDecisionScopes = "        {\n" +
+                "        \"decisionProvider\": \"TGT\",\n" +
+                "                \"activity\": {\n" +
+                "        \"id\": \"125589\"\n" +
+                "            },\n" +
+                "        \"experience\": {\n" +
+                "        \"id\": \"0\"\n" +
+                "            },\n" +
+                "        \"strategies\": [\n" +
+                "                {\n" +
+                "        \"algorithmID\": \"0\",\n" +
+                "                \"trafficType\": \"0\"\n" +
+                "                }\n" +
+                "            ]\n" +
+                "        }\n";
+        Map<String, Object> testDecisionScopesMap = Collections.emptyMap();
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            testDecisionScopesMap = objectMapper.readValue(testDecisionScopes, Map.class);
+        } catch (IOException e) {
+            Assert.fail("Failed to convert Decision scopes from String  to JSON Object.");
+        }
+
+        Offer offer = new Offer.Builder("246315", OfferType.TEXT, "Text Offer!!").build();
+        Proposition proposition = new Proposition(
+                "AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9",
+                Arrays.asList(offer),
+                "myMbox",
+                testDecisionScopesMap
+        );
+        offer.propositionReference = new SoftReference<>(proposition);
+
+        //Action
+        TestHelper.resetTestExpectations();
+        offer.tapped();
+
+        //Assert
+        List<Event> optimizeRequestEventsList = null;
+        List<Event> edgeRequestEventList = null;
+        try {
+            optimizeRequestEventsList = TestHelper.getDispatchedEventsWith(TestConstants.EventType.OPTIMIZE, TestConstants.EventSource.REQUEST_CONTENT, 1000);
+            edgeRequestEventList = TestHelper.getDispatchedEventsWith(TestConstants.EventType.EDGE, TestConstants.EventSource.REQUEST_CONTENT, 1000);
+        } catch (InterruptedException e) {
+            Assert.fail("Error in fetching dispatched track events.");
+        }
+
+        Assert.assertNotNull(optimizeRequestEventsList);
+        Assert.assertEquals(1, optimizeRequestEventsList.size());
+        Assert.assertNotNull(edgeRequestEventList);
+        Assert.assertEquals(1, edgeRequestEventList.size());
+
+        Map<String, Object> xdm = (Map<String, Object>) edgeRequestEventList.get(0).getEventData().get("xdm");
+        Assert.assertEquals("decisioning.propositionInteract", xdm.get("eventType"));
+
+        List<Map<String, Object>> propositionList = (List<Map<String, Object>>) ((Map<String, Object>) ((Map<String, Object>) xdm.get("_experience")).get("decisioning"))
+                .get("propositions");
+        Assert.assertNotNull(propositionList);
+        Assert.assertEquals(1, propositionList.size());
+        Map<String, Object> propositionData = propositionList.get(0);
+        List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) propositionData.get("propositions");
+        Assert.assertNotNull(propositionList);
+        Assert.assertEquals(1, propositionList.size());
+        Map<String, Object> propositionMap = propositionList.get(0);
+        Assert.assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionMap.get("id"));
+        Assert.assertEquals("myMbox", propositionMap.get("scope"));
+        Assert.assertEquals(testDecisionScopesMap, (Map<String, Object>) propositionMap.get("scopeDetails"));
+        List<Map<String, Object>> itemsList = (List<Map<String, Object>>) propositionMap.get("items");
+        Assert.assertNotNull(itemsList);
+        Assert.assertEquals(1, itemsList.size());
+        Assert.assertEquals("246315", itemsList.get(0).get("id"));
+    }
+
+    //23
+    @Test
+    public void testTrackPropositions_validPropositionInteractionsWithDatasetConfig() {
+        //setup
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        configData.put("optimize.datasetId", "111111111111111111111111");
+        MobileCore.updateConfiguration(configData);
+        final String testDecisionScopes = "        {\n" +
+                "        \"decisionProvider\": \"TGT\",\n" +
+                "                \"activity\": {\n" +
+                "        \"id\": \"125589\"\n" +
+                "            },\n" +
+                "        \"experience\": {\n" +
+                "        \"id\": \"0\"\n" +
+                "            },\n" +
+                "        \"strategies\": [\n" +
+                "                {\n" +
+                "        \"algorithmID\": \"0\",\n" +
+                "                \"trafficType\": \"0\"\n" +
+                "                }\n" +
+                "            ]\n" +
+                "        }\n";
+        Map<String, Object> testDecisionScopesMap = Collections.emptyMap();
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            testDecisionScopesMap = objectMapper.readValue(testDecisionScopes, Map.class);
+        } catch (IOException e) {
+            Assert.fail("Failed to convert Decision scopes from String  to JSON Object.");
+        }
+
+        Offer offer = new Offer.Builder("246315", OfferType.TEXT, "Text Offer!!").build();
+        Proposition proposition = new Proposition(
+                "AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9",
+                Arrays.asList(offer),
+                "myMbox",
+                testDecisionScopesMap
+        );
+        offer.propositionReference = new SoftReference<>(proposition);
+
+        //Action
+        TestHelper.resetTestExpectations();
+        offer.tapped();
+
+        //Assert
+        List<Event> optimizeRequestEventsList = null;
+        List<Event> edgeRequestEventList = null;
+        try {
+            optimizeRequestEventsList = TestHelper.getDispatchedEventsWith(TestConstants.EventType.OPTIMIZE, TestConstants.EventSource.REQUEST_CONTENT, 1000);
+            edgeRequestEventList = TestHelper.getDispatchedEventsWith(TestConstants.EventType.EDGE, TestConstants.EventSource.REQUEST_CONTENT, 1000);
+        } catch (InterruptedException e) {
+            Assert.fail("Error in fetching dispatched track events.");
+        }
+
+        Assert.assertNotNull(optimizeRequestEventsList);
+        Assert.assertEquals(1, optimizeRequestEventsList.size());
+        Assert.assertNotNull(edgeRequestEventList);
+        Assert.assertEquals(1, edgeRequestEventList.size());
+
+        Map<String, Object> xdm = (Map<String, Object>) edgeRequestEventList.get(0).getEventData().get("xdm");
+        Assert.assertEquals("decisioning.propositionInteract", xdm.get("eventType"));
+
+        List<Map<String, Object>> propositionList = (List<Map<String, Object>>) ((Map<String, Object>) ((Map<String, Object>) xdm.get("_experience")).get("decisioning"))
+                .get("propositions");
+        Assert.assertNotNull(propositionList);
+        Assert.assertEquals(1, propositionList.size());
+        Map<String, Object> propositionData = propositionList.get(0);
+        List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) propositionData.get("propositions");
+        Assert.assertNotNull(propositionList);
+        Assert.assertEquals(1, propositionList.size());
+        Map<String, Object> propositionMap = propositionList.get(0);
+        Assert.assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionMap.get("id"));
+        Assert.assertEquals("myMbox", propositionMap.get("scope"));
+        Assert.assertEquals(testDecisionScopesMap, (Map<String, Object>) propositionMap.get("scopeDetails"));
+        List<Map<String, Object>> itemsList = (List<Map<String, Object>>) propositionMap.get("items");
+        Assert.assertNotNull(itemsList);
+        Assert.assertEquals(1, itemsList.size());
+        Assert.assertEquals("246315", itemsList.get(0).get("id"));
+
+        Assert.assertEquals("111111111111111111111111", edgeRequestEventList.get(0).getEventData().get("datasetId"));
+    }
+
+    //24
+    @Test
+    public void testTrackPropositions_missingEventRequestTypeInData() {
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        MobileCore.updateConfiguration(configData);
+        final String eventDataString = "{\n" +
+                "                                \"propositioninteractions\": {\n" +
+                "                                    \"eventType\": \"decisioning.propositionDisplay\",\n" +
+                "                                    \"_experience\": {\n" +
+                "                                        \"decisioning\": {\n" +
+                "                                            \"propositions\": [\n" +
+                "                                                {\n" +
+                "                                                    \"id\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n" +
+                "                                                    \"scope\": \"eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==\",\n" +
+                "                                                    \"scopeDetails\": {},\n" +
+                "                                                    \"items\": [\n" +
+                "                                                        {\n" +
+                "                                                            \"id\": \"xcore:personalized-offer:1111111111111111\"\n" +
+                "                                                        }\n" +
+                "                                                    ]\n" +
+                "                                                }\n" +
+                "                                            ]\n" +
+                "                                        }\n" +
+                "                                    }\n" +
+                "                                }\n" +
+                "                              }";
+
+        Map<String, Object> eventData = null;
+        try {
+            eventData = new ObjectMapper().readValue(eventDataString, Map.class);
+        } catch (IOException e) {
+            Assert.fail("Error in converting event data string to Json.");
+        }
+
+        //Action
+        Event trackEvent = new Event.Builder(
+                "Optimize Track Propositions Request",
+                TestConstants.EventType.OPTIMIZE,
+                TestConstants.EventSource.REQUEST_CONTENT).
+                setEventData(eventData).
+                build();
+        MobileCore.dispatchEvent(trackEvent, new ExtensionErrorCallback<ExtensionError>() {
+            @Override
+            public void error(ExtensionError extensionError) {
+                Assert.fail("Error in dispatching Optimize Track Propositions Request event.");
+            }
+        });
+
+        //Assert
+        TestHelper.resetTestExpectations();
+        List<Event> edgeRequestEventList = null;
+        try {
+            edgeRequestEventList = TestHelper.getDispatchedEventsWith(TestConstants.EventType.EDGE, TestConstants.EventSource.REQUEST_CONTENT, 1000);
+        } catch (InterruptedException e) {
+            Assert.fail("Expected Edge Request event was not dispatched.");
+        }
+
+        Assert.assertNotNull(edgeRequestEventList);
+        Assert.assertTrue(edgeRequestEventList.isEmpty());
+    }
+
+    //25
+    @Test
+    public void testTrackPropositions_configNotAvailable() {
+        TestHelper.clearSharedState();
+        final String eventDataString = "{\n" +
+                "                                \"requesttype\": \"trackpropositions\","+
+                "                                \"propositioninteractions\": {\n" +
+                "                                    \"eventType\": \"decisioning.propositionDisplay\",\n" +
+                "                                    \"_experience\": {\n" +
+                "                                        \"decisioning\": {\n" +
+                "                                            \"propositions\": [\n" +
+                "                                                {\n" +
+                "                                                    \"id\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n" +
+                "                                                    \"scope\": \"eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==\",\n" +
+                "                                                    \"scopeDetails\": {},\n" +
+                "                                                    \"items\": [\n" +
+                "                                                        {\n" +
+                "                                                            \"id\": \"xcore:personalized-offer:1111111111111111\"\n" +
+                "                                                        }\n" +
+                "                                                    ]\n" +
+                "                                                }\n" +
+                "                                            ]\n" +
+                "                                        }\n" +
+                "                                    }\n" +
+                "                                }\n" +
+                "                              }";
+
+        Map<String, Object> eventData = null;
+        try {
+            eventData = new ObjectMapper().readValue(eventDataString, Map.class);
+        } catch (IOException e) {
+            Assert.fail("Error in converting event data string to Json.");
+        }
+
+        //Action
+        Event trackEvent = new Event.Builder(
+                "Optimize Track Propositions Request",
+                TestConstants.EventType.OPTIMIZE,
+                TestConstants.EventSource.REQUEST_CONTENT).
+                setEventData(eventData).
+                build();
+        MobileCore.dispatchEvent(trackEvent, new ExtensionErrorCallback<ExtensionError>() {
+            @Override
+            public void error(ExtensionError extensionError) {
+                Assert.fail("Error in dispatching Optimize Track Propositions Request event.");
+            }
+        });
+
+        //Assert
+        TestHelper.resetTestExpectations();
+        List<Event> edgeRequestEventList = null;
+        try {
+            edgeRequestEventList = TestHelper.getDispatchedEventsWith(TestConstants.EventType.EDGE, TestConstants.EventSource.REQUEST_CONTENT, 1000);
+        } catch (InterruptedException e) {
+            Assert.fail("Expected Edge Request event was not dispatched.");
+        }
+
+        Assert.assertNotNull(edgeRequestEventList);
+        Assert.assertTrue(edgeRequestEventList.isEmpty());
+    }
+
+    //26
+    @Test
+    public void testTrackPropositions_noPropositionInteractions() {
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        MobileCore.updateConfiguration(configData);
+        final String eventDataString = "{\n" +
+                "                                \"requesttype\": \"trackpropositions\","+
+                "                                \"propositioninteractions\": {\n" +
+                "                                }\n" +
+                "                              }";
+
+        Map<String, Object> eventData = null;
+        try {
+            eventData = new ObjectMapper().readValue(eventDataString, Map.class);
+        } catch (IOException e) {
+            Assert.fail("Error in converting event data string to Json.");
+        }
+
+        //Action
+        Event trackEvent = new Event.Builder(
+                "Optimize Track Propositions Request",
+                TestConstants.EventType.OPTIMIZE,
+                TestConstants.EventSource.REQUEST_CONTENT).
+                setEventData(eventData).
+                build();
+        MobileCore.dispatchEvent(trackEvent, new ExtensionErrorCallback<ExtensionError>() {
+            @Override
+            public void error(ExtensionError extensionError) {
+                Assert.fail("Error in dispatching Optimize Track Propositions Request event.");
+            }
+        });
+
+        //Assert
+        TestHelper.resetTestExpectations();
+        List<Event> edgeRequestEventList = null;
+        try {
+            edgeRequestEventList = TestHelper.getDispatchedEventsWith(TestConstants.EventType.EDGE, TestConstants.EventSource.REQUEST_CONTENT, 1000);
+        } catch (InterruptedException e) {
+            Assert.fail("Expected Edge Request event was not dispatched.");
+        }
+
+        Assert.assertNotNull(edgeRequestEventList);
+        Assert.assertTrue(edgeRequestEventList.isEmpty());
+    }
+
+    //27
+    @Test
+    public void testClearCachedPropositions() {
+        //setup
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        MobileCore.updateConfiguration(configData);
+        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
+
+        final String edgeResponseData = "{\n" +
+                "                                  \"payload\": [\n" +
+                "                                    {\n" +
+                "                                        \"id\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n" +
+                "                                        \"scope\": \""+decisionScopeString+"\",\n" +
+                "                                        \"activity\": {\n" +
+                "                                            \"etag\": \"8\",\n" +
+                "                                            \"id\": \"xcore:offer-activity:1111111111111111\"\n" +
+                "                                        },\n" +
+                "                                        \"placement\": {\n" +
+                "                                            \"etag\": \"1\",\n" +
+                "                                            \"id\": \"xcore:offer-placement:1111111111111111\"\n" +
+                "                                        },\n" +
+                "                                        \"items\": [\n" +
+                "                                            {\n" +
+                "                                                \"id\": \"xcore:personalized-offer:1111111111111111\",\n" +
+                "                                                \"etag\": \"10\",\n" +
+                "                                                \"schema\": \"https://ns.adobe.com/experience/offer-management/content-component-html\",\n" +
+                "                                                \"data\": {\n" +
+                "                                                    \"id\": \"xcore:personalized-offer:1111111111111111\",\n" +
+                "                                                    \"format\": \"text/html\",\n" +
+                "                                                    \"content\": \"<h1>This is HTML content</h1>\",\n" +
+                "                                                    \"characteristics\": {\n" +
+                "                                                        \"testing\": \"true\"\n" +
+                "                                                    }\n" +
+                "                                                }\n" +
+                "                                            }\n" +
+                "                                        ]\n" +
+                "                                    }\n" +
+                "                                  ],\n" +
+                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
+                "                                \"type\": \"personalization:decisions\"\n" +
+                "                              }";
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> eventData = null;
+        try {
+            eventData = objectMapper.readValue(edgeResponseData, Map.class);
+        } catch (IOException e) {
+            Assert.fail("Error in converting JSON payload to Map.");
+        }
+
+        Event event = new Event.Builder(
+                "AEP Response Event Handle",
+                TestConstants.EventType.EDGE,
+                TestConstants.EventSource.PERSONALIZATION).
+                setEventData(eventData).
+                build();
+
+        //Action
+        MobileCore.dispatchEvent(event, new ExtensionErrorCallback<ExtensionError>() {
+            @Override
+            public void error(ExtensionError extensionError) {
+                Assert.fail("Error in dispatching Edge Personalization event.");
+            }
+        });
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
+
+        TestHelper.resetTestExpectations();
+        DecisionScope decisionScope = new DecisionScope(decisionScopeString);
+        final Map<DecisionScope, Proposition> propositionMap = new HashMap<>();
+        final ADBCountDownLatch countDownLatch = new ADBCountDownLatch(1);
+        Optimize.getPropositions(Arrays.asList(decisionScope), new AdobeCallbackWithError<Map<DecisionScope, Proposition>>() {
+            @Override
+            public void fail(AdobeError adobeError) {
+                Assert.fail("Error in getting cached propositions");
+            }
+
+            @Override
+            public void call(Map<DecisionScope, Proposition> decisionScopePropositionMap) {
+                propositionMap.putAll(decisionScopePropositionMap);
+                countDownLatch.countDown();
+            }
+        });
+
+        try {
+            countDownLatch.await(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Assert.fail("Timeout while getting cached propositions.");
+        }
+        //Assertions
+        Assert.assertEquals(1, propositionMap.size());
+
+        //Action clear the cache
+        Optimize.clearCachedPropositions();
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
+        final ADBCountDownLatch countDownLatch1 = new ADBCountDownLatch(1);
+        propositionMap.clear();
+        Optimize.getPropositions(Arrays.asList(decisionScope), new AdobeCallbackWithError<Map<DecisionScope, Proposition>>() {
+            @Override
+            public void fail(AdobeError adobeError) {
+                Assert.fail("Error in getting cached propositions");
+            }
+
+            @Override
+            public void call(Map<DecisionScope, Proposition> decisionScopePropositionMap) {
+                propositionMap.putAll(decisionScopePropositionMap);
+                countDownLatch1.countDown();
+            }
+        });
+        try {
+            countDownLatch.await(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Assert.fail("Timeout while getting cached propositions.");
+        }
+
+        Assert.assertTrue(propositionMap.isEmpty());
+    }
+
+    //28
+    @Test
+    public void testCoreResetIdentities() {
+        //setup
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        MobileCore.updateConfiguration(configData);
+        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
+
+        final String edgeResponseData = "{\n" +
+                "                                  \"payload\": [\n" +
+                "                                    {\n" +
+                "                                        \"id\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n" +
+                "                                        \"scope\": \""+decisionScopeString+"\",\n" +
+                "                                        \"activity\": {\n" +
+                "                                            \"etag\": \"8\",\n" +
+                "                                            \"id\": \"xcore:offer-activity:1111111111111111\"\n" +
+                "                                        },\n" +
+                "                                        \"placement\": {\n" +
+                "                                            \"etag\": \"1\",\n" +
+                "                                            \"id\": \"xcore:offer-placement:1111111111111111\"\n" +
+                "                                        },\n" +
+                "                                        \"items\": [\n" +
+                "                                            {\n" +
+                "                                                \"id\": \"xcore:personalized-offer:1111111111111111\",\n" +
+                "                                                \"etag\": \"10\",\n" +
+                "                                                \"schema\": \"https://ns.adobe.com/experience/offer-management/content-component-html\",\n" +
+                "                                                \"data\": {\n" +
+                "                                                    \"id\": \"xcore:personalized-offer:1111111111111111\",\n" +
+                "                                                    \"format\": \"text/html\",\n" +
+                "                                                    \"content\": \"<h1>This is HTML content</h1>\",\n" +
+                "                                                    \"characteristics\": {\n" +
+                "                                                        \"testing\": \"true\"\n" +
+                "                                                    }\n" +
+                "                                                }\n" +
+                "                                            }\n" +
+                "                                        ]\n" +
+                "                                    }\n" +
+                "                                  ],\n" +
+                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
+                "                                \"type\": \"personalization:decisions\"\n" +
+                "                              }";
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> eventData = null;
+        try {
+            eventData = objectMapper.readValue(edgeResponseData, Map.class);
+        } catch (IOException e) {
+            Assert.fail("Error in converting JSON payload to Map.");
+        }
+
+        Event event = new Event.Builder(
+                "AEP Response Event Handle",
+                TestConstants.EventType.EDGE,
+                TestConstants.EventSource.PERSONALIZATION).
+                setEventData(eventData).
+                build();
+
+        //Action
+        MobileCore.dispatchEvent(event, new ExtensionErrorCallback<ExtensionError>() {
+            @Override
+            public void error(ExtensionError extensionError) {
+                Assert.fail("Error in dispatching Edge Personalization event.");
+            }
+        });
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
+
+        TestHelper.resetTestExpectations();
+        DecisionScope decisionScope = new DecisionScope(decisionScopeString);
+        final Map<DecisionScope, Proposition> propositionMap = new HashMap<>();
+        final ADBCountDownLatch countDownLatch = new ADBCountDownLatch(1);
+        Optimize.getPropositions(Arrays.asList(decisionScope), new AdobeCallbackWithError<Map<DecisionScope, Proposition>>() {
+            @Override
+            public void fail(AdobeError adobeError) {
+                Assert.fail("Error in getting cached propositions");
+            }
+
+            @Override
+            public void call(Map<DecisionScope, Proposition> decisionScopePropositionMap) {
+                propositionMap.putAll(decisionScopePropositionMap);
+                countDownLatch.countDown();
+            }
+        });
+
+        try {
+            countDownLatch.await(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Assert.fail("Timeout while getting cached propositions.");
+        }
+        //Assertions
+        Assert.assertEquals(1, propositionMap.size());
+
+        //Action: Trigger Identity Request reset event.
+        Event eventIdentityRequestReset = new Event.Builder(
+                "Reset Identities Request",
+                TestConstants.EventType.IDENTITY,
+                TestConstants.EventSource.REQUEST_RESET).
+                setEventData( null).
+                build();
+
+        MobileCore.dispatchEvent(eventIdentityRequestReset, new ExtensionErrorCallback<ExtensionError>() {
+            @Override
+            public void error(ExtensionError extensionError) {
+                Assert.fail("Error in sending Identity Request Reset event.");
+            }
+        });
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
+
+        //Assert
+        TestHelper.resetTestExpectations();
+        propositionMap.clear();
+        final ADBCountDownLatch countDownLatch1 = new ADBCountDownLatch(1);
+        Optimize.getPropositions(Arrays.asList(decisionScope), new AdobeCallbackWithError<Map<DecisionScope, Proposition>>() {
+            @Override
+            public void fail(AdobeError adobeError) {
+                Assert.fail("Error in getting cached propositions");
+            }
+
+            @Override
+            public void call(Map<DecisionScope, Proposition> decisionScopePropositionMap) {
+                propositionMap.putAll(decisionScopePropositionMap);
+                countDownLatch1.countDown();
+            }
+        });
+
+        try {
+            countDownLatch1.await(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Assert.fail("Timeout while getting cached propositions.");
+        }
+        //Assertions
+        Assert.assertTrue(propositionMap.isEmpty());
     }
 }

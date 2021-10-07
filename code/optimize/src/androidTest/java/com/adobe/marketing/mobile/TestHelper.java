@@ -20,6 +20,7 @@ import android.provider.ContactsContract;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.hamcrest.Condition;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.rules.TestRule;
@@ -332,9 +333,17 @@ public class TestHelper {
     public static void sleep(int milliseconds) {
         try {
             Thread.sleep(milliseconds);
+            EventHub e;
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Clear all the shared states..
+     */
+    public static void clearSharedState() {
+        MobileCore.getCore().eventHub.resetSharedStates();
     }
 
     /**

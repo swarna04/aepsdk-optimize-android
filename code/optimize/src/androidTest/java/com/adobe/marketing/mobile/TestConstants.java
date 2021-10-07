@@ -18,6 +18,7 @@ public class TestConstants {
         public static final String MONITOR = "com.adobe.functional.eventType.monitor";
         public static final String OPTIMIZE = "com.adobe.eventtype.optimize";
         public static final String EDGE = "com.adobe.eventType.edge";
+        public static final String IDENTITY = "com.adobe.eventType.generic.identity";
     }
 
     public final static class EventSource {
@@ -32,6 +33,7 @@ public class TestConstants {
         public static final String NOTIFICATION = "com.adobe.eventSource.notification";
         public static final String EDGE_ERROR_RESPONSE = "com.adobe.eventSource.errorResponseContent";
         public static final String RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
+        public static final String REQUEST_RESET = "com.adobe.eventSource.requestReset";
     }
 
     public final static class EventDataKey {
