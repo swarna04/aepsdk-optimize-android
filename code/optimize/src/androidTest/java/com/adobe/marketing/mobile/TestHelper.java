@@ -1,28 +1,29 @@
 /*
-  Copyright 2021 Adobe. All rights reserved.
-  This file is licensed to you under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License. You may obtain a copy
-  of the License at http://www.apache.org/licenses/LICENSE-2.0
-  Unless required by applicable law or agreed to in writing, software distributed under
-  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-  OF ANY KIND, either express or implied. See the License for the specific language
-  governing permissions and limitations under the License.
-*/
+ Copyright 2021 Adobe. All rights reserved.
+ This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License. You may obtain a copy
+ of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software distributed under
+ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ OF ANY KIND, either express or implied. See the License for the specific language
+ governing permissions and limitations under the License.
+ */
 
 package com.adobe.marketing.mobile;
 
+import static com.adobe.marketing.mobile.MonitorExtension.EventSpec;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
-import android.provider.ContactsContract;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import org.hamcrest.Condition;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.adobe.marketing.mobile.optimize.ADBCountDownLatch;
+import com.adobe.marketing.mobile.optimize.OptimizeTestConstants;
+
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -35,9 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import static com.adobe.marketing.mobile.MonitorExtension.EventSpec;
-
-import com.adobe.marketing.mobile.optimize.Optimize;
 
 /**
  * Test helper for functional testing to read, write, reset and assert against eventhub events, shared states and persistence data.
@@ -194,7 +192,7 @@ public class TestHelper {
 
     /**
      * Retrieves all the known threads that are still running
-     * @return set of running tests
+     * @return set of running Threads
      */
     private static Set<Thread> getEligibleThreads() {
         Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
@@ -293,11 +291,11 @@ public class TestHelper {
      * @throws InterruptedException
      */
     public static Map<String, Object> getSharedStateFor(final String stateOwner, int timeout) throws InterruptedException {
-        Event event = new Event.Builder("Get Shared State Request", TestConstants.EventType.MONITOR,
-                TestConstants.EventSource.SHARED_STATE_REQUEST)
+        Event event = new Event.Builder("Get Shared State Request", OptimizeTestConstants.EventType.MONITOR,
+                OptimizeTestConstants.EventSource.SHARED_STATE_REQUEST)
                 .setEventData(new HashMap<String, Object>() {
                     {
-                        put(TestConstants.EventDataKey.STATE_OWNER, stateOwner);
+                        put(OptimizeTestConstants.EventDataKeys.STATE_OWNER, stateOwner);
                     }
                 })
                 .build();
