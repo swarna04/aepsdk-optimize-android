@@ -1180,7 +1180,7 @@ public class OptimizeFunctionalTests {
         Assert.assertTrue(propositionMap.isEmpty());
     }
 
-    //28
+    //18
     @Test
     public void testCoreResetIdentities() throws InterruptedException, IOException {
         //setup
