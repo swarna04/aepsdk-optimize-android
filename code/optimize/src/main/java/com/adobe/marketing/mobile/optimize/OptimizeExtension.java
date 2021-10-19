@@ -36,7 +36,7 @@ class OptimizeExtension extends Extension {
     private final Object executorMutex = new Object();
     private ExecutorService executorService;
 
-    private Map<DecisionScope, Proposition> cachedPropositions;
+    final private Map<DecisionScope, Proposition> cachedPropositions;
 
     /**
      * Constructor for {@code OptimizeExtension}.
@@ -483,7 +483,7 @@ class OptimizeExtension extends Extension {
      * This method returns null if the given {@code decisionScopesData} list is null, or empty, or if there is no valid decision scope in the
      * provided list.
      *
-     * @param decisionScopesData input {@List<Map<String, Object>>} containing scope data.
+     * @param decisionScopesData input {@code List<Map<String, Object>>} containing scope data.
      * @return {@code List<String>} containing valid scope names.
      * @see DecisionScope#isValid()
      */
@@ -520,12 +520,10 @@ class OptimizeExtension extends Extension {
         final Map<String, Object> eventData = new HashMap<>();
         eventData.put(OptimizeConstants.EventDataKeys.RESPONSE_ERROR, error);
 
-        final Event event = new Event.Builder(OptimizeConstants.EventNames.OPTIMIZE_RESPONSE,
+        return new Event.Builder(OptimizeConstants.EventNames.OPTIMIZE_RESPONSE,
                 OptimizeConstants.EventType.OPTIMIZE,
                 OptimizeConstants.EventSource.RESPONSE_CONTENT)
                 .setEventData(eventData)
                 .build();
-
-        return event;
     }
 }
