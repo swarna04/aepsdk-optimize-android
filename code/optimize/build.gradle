@@ -239,7 +239,7 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:${rootProject.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
-    androidTestImplementation "com.adobe.marketing.mobile:edgeidentity:$rootProject.edgeIdentityVersion"
+    androidTestImplementation "com.adobe.marketing.mobile:edgeidentity:1.+"
 }
 
 tasks.withType(Test) {

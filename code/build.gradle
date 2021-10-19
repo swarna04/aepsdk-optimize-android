@@ -46,5 +46,4 @@ ext {
     buildToolsVersion = "29.0.3"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     jacocoVersion = "0.8.5"
-    edgeIdentityVersion = "1.+"
 }

@@ -47,9 +47,9 @@ public class TestHelper {
     static Application defaultApplication;
 
     // List of threads to wait for after test execution
-    private static List<String> knownThreads = new ArrayList<String>();
+    private static final List<String> knownThreads = new ArrayList<String>();
 
-    {
+    static {
         knownThreads.add("pool"); // used for threads that execute the listeners code
         knownThreads.add("ADB"); // module internal threads
     }
@@ -331,7 +331,6 @@ public class TestHelper {
     public static void sleep(int milliseconds) {
         try {
             Thread.sleep(milliseconds);
-            EventHub e;
         } catch (Exception e) {
             e.printStackTrace();
         }
