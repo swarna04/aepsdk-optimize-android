@@ -315,7 +315,6 @@ class OptimizeExtension extends Extension {
                 if (event == null || OptimizeUtils.isNullOrEmpty(event.getEventData())) {
                     MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot process the update propositions request event, event is null or event data is null/ empty.");
                     MobileCore.dispatchResponseEvent(createResponseEventWithError(AdobeError.UNEXPECTED_ERROR), event, callback);
-                    return;
                 }
                 final Map<String, Object> eventData = event.getEventData();
 
@@ -325,7 +324,6 @@ class OptimizeExtension extends Extension {
                     if (OptimizeUtils.isNullOrEmpty(validScopeNames)) {
                         MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot process the get propositions request event, provided list of decision scopes has no valid scope.");
                         MobileCore.dispatchResponseEvent(createResponseEventWithError(AdobeError.UNEXPECTED_ERROR), event, callback);
-                        return;
                     }
 
                     final List<Map<String, Object>> propositionsList = new ArrayList<>();
