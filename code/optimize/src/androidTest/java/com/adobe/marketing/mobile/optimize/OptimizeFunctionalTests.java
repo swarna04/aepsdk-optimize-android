@@ -29,6 +29,7 @@ import com.adobe.marketing.mobile.ExtensionErrorCallback;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.TestHelper;
 import com.adobe.marketing.mobile.edge.identity.Identity;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.Assert;
@@ -39,7 +40,6 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -103,7 +103,7 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
         Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
         Assert.assertTrue(eventData.size() > 0);
-        Assert.assertEquals("updatepropositions", (String) eventData.get("requesttype"));
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
         List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
         Assert.assertEquals(1, decisionScopes.size());
         Assert.assertEquals(decisionScopeName, decisionScopes.get(0).get("name"));
@@ -162,7 +162,7 @@ public class OptimizeFunctionalTests {
         Assert.assertTrue(eventData.size() > 0);
         Assert.assertEquals("MyXDMValue", ((Map<String, String>) eventData.get("xdm")).get("MyXDMKey"));
         Assert.assertEquals("MyDataValue", ((Map<String, String>) eventData.get("data")).get("MyDataKey"));
-        Assert.assertEquals("updatepropositions", (String) eventData.get("requesttype"));
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
         List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
         Assert.assertEquals(1, decisionScopes.size());
         Assert.assertEquals(decisionScopeName, decisionScopes.get(0).get("name"));
@@ -212,7 +212,7 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
         Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
         Assert.assertTrue(eventData.size() > 0);
-        Assert.assertEquals("updatepropositions", (String) eventData.get("requesttype"));
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
         List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
         Assert.assertEquals(2, decisionScopes.size());
         Assert.assertEquals(decisionScopeName1, decisionScopes.get(0).get("name"));
@@ -280,7 +280,7 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
         Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
         Assert.assertTrue(eventData.size() > 0);
-        Assert.assertEquals("updatepropositions", (String) eventData.get("requesttype"));
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
         List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
         Assert.assertEquals(1, decisionScopes.size());
         Assert.assertEquals(decisionScopeName2, decisionScopes.get(0).get("name"));
@@ -345,7 +345,7 @@ public class OptimizeFunctionalTests {
                 "                              }";
 
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, Map.class);
+        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, new TypeReference<Map<String, Object>>() {});
 
         Event event = new Event.Builder(
                 "AEP Response Event Handle",
@@ -557,7 +557,7 @@ public class OptimizeFunctionalTests {
                 "                              }";
 
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, Map.class);
+        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, new TypeReference<Map<String, Object>>() {});
 
         Event event = new Event.Builder(
                 "AEP Response Event Handle",
@@ -689,7 +689,7 @@ public class OptimizeFunctionalTests {
         Map<String, Object> propositionMap = propositionList.get(0);
         Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", propositionMap.get("id"));
         Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionMap.get("scope"));
-        Assert.assertTrue(((Map) propositionMap.get("scopeDetails")).isEmpty());
+        Assert.assertTrue(((Map<String, Object>) propositionMap.get("scopeDetails")).isEmpty());
         List<Map<String, Object>> itemsList = (List<Map<String, Object>>) propositionMap.get("items");
         Assert.assertNotNull(itemsList);
         Assert.assertEquals(1, itemsList.size());
@@ -719,7 +719,7 @@ public class OptimizeFunctionalTests {
                 "            ]\n" +
                 "        }\n";
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> testDecisionScopesMap = objectMapper.readValue(testScopeDetails, Map.class);
+        Map<String, Object> testDecisionScopesMap = objectMapper.readValue(testScopeDetails, new TypeReference<Map<String, Object>>() {});
 
         Offer offer = new Offer.Builder("246315", OfferType.TEXT, "Text Offer!!").build();
         //Set the proposition soft reference to Offer
@@ -757,7 +757,7 @@ public class OptimizeFunctionalTests {
         Map<String, Object> propositionMap = propositionList.get(0);
         Assert.assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionMap.get("id"));
         Assert.assertEquals("myMbox", propositionMap.get("scope"));
-        Assert.assertEquals(testDecisionScopesMap, (Map<String, Object>) propositionMap.get("scopeDetails"));
+        Assert.assertEquals(testDecisionScopesMap, propositionMap.get("scopeDetails"));
         List<Map<String, Object>> itemsList = (List<Map<String, Object>>) propositionMap.get("items");
         Assert.assertNotNull(itemsList);
         Assert.assertEquals(1, itemsList.size());
@@ -788,7 +788,7 @@ public class OptimizeFunctionalTests {
                 "            ]\n" +
                 "        }\n";
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> testDecisionScopesMap = objectMapper.readValue(testDecisionScopes, Map.class);
+        Map<String, Object> testDecisionScopesMap = objectMapper.readValue(testDecisionScopes, new TypeReference<Map<String, Object>>() {});
 
         Offer offer = new Offer.Builder("246315", OfferType.TEXT, "Text Offer!!").build();
         Proposition proposition = new Proposition(
@@ -825,7 +825,7 @@ public class OptimizeFunctionalTests {
         Map<String, Object> propositionMap = propositionList.get(0);
         Assert.assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionMap.get("id"));
         Assert.assertEquals("myMbox", propositionMap.get("scope"));
-        Assert.assertEquals(testDecisionScopesMap, (Map<String, Object>) propositionMap.get("scopeDetails"));
+        Assert.assertEquals(testDecisionScopesMap, propositionMap.get("scopeDetails"));
         List<Map<String, Object>> itemsList = (List<Map<String, Object>>) propositionMap.get("items");
         Assert.assertNotNull(itemsList);
         Assert.assertEquals(1, itemsList.size());
@@ -880,7 +880,7 @@ public class OptimizeFunctionalTests {
                 "                              }";
 
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, Map.class);
+        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, new TypeReference<Map<String, Object>>() {});
 
         Event event = new Event.Builder(
                 "AEP Response Event Handle",
@@ -990,7 +990,7 @@ public class OptimizeFunctionalTests {
                 "                              }";
 
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, Map.class);
+        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, new TypeReference<Map<String, Object>>() {});
 
         Event event = new Event.Builder(
                 "AEP Response Event Handle",
@@ -1087,8 +1087,9 @@ public class OptimizeFunctionalTests {
                 "}";
 
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> propositionData = objectMapper.readValue(validPropositionText, Map.class);
+        Map<String, Object> propositionData = objectMapper.readValue(validPropositionText, new TypeReference<Map<String, Object>>() {});
         Proposition proposition = Proposition.fromEventData(propositionData);
+        assert proposition != null;
         Offer offer = proposition.getOffers().get(0);
 
         //Action
@@ -1104,7 +1105,7 @@ public class OptimizeFunctionalTests {
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
-        final Map<String, Object> propositionInteractionDetailsMap = (Map<String, Object>)propositionInteractionDetailsList.get(0);
+        final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
         assertEquals("de03ac85-802a-4331-a905-a57053164d35", propositionInteractionDetailsMap.get("id"));
         assertEquals("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionInteractionDetailsMap.get("scope"));
         final Map<String, Object> scopeDetails = (Map<String, Object>)propositionInteractionDetailsMap.get("scopeDetails");
@@ -1121,32 +1122,40 @@ public class OptimizeFunctionalTests {
     public void testOfferGenerateTapInteractionXdm() throws IOException {
         //Setup
         final String validProposition = "{\n" +
-                "  \"id\":\"de03ac85-802a-4331-a905-a57053164d35\",\n" +
-                "  \"items\":[\n" +
+                "  \"id\": \"AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9\",\n" +
+                "  \"items\": [\n" +
                 "    {\n" +
-                "      \"id\":\"xcore:personalized-offer:1111111111111111\",\n" +
-                "      \"etag\":\"10\",\n" +
-                "      \"schema\":\"https://ns.adobe.com/experience/offer-management/content-component-html\",\n" +
-                "      \"data\":{\n" +
-                "        \"id\":\"xcore:personalized-offer:1111111111111111\",\n" +
-                "        \"format\":\"text/html\",\n" +
-                "        \"content\":\"<h1>This is a HTML content</h1>\"\n" +
+                "      \"id\": \"246315\",\n" +
+                "      \"schema\": \"https://ns.adobe.com/personalization/json-content-item\",\n" +
+                "      \"data\": {\n" +
+                "        \"id\": \"246315\",\n" +
+                "        \"format\": \"application/json\",\n" +
+                "        \"content\": {\n" +
+                "          \"testing\": \"ho-ho\"\n" +
+                "        }\n" +
                 "      }\n" +
                 "    }\n" +
                 "  ],\n" +
-                "  \"placement\":{\n" +
-                "    \"etag\":\"1\",\n" +
-                "    \"id\":\"xcore:offer-placement:1111111111111111\"\n" +
-                "  },\n" +
-                "  \"activity\":{\n" +
-                "    \"etag\":\"8\",\n" +
-                "    \"id\":\"xcore:offer-activity:1111111111111111\"\n" +
-                "  },\n" +
-                "  \"scope\":\"eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==\"\n" +
+                "  \"scope\": \"myMbox\",\n" +
+                "  \"scopeDetails\": {\n" +
+                "    \"decisionProvider\": \"TGT\",\n" +
+                "    \"activity\": {\n" +
+                "      \"id\": \"125589\"\n" +
+                "    },\n" +
+                "    \"experience\": {\n" +
+                "      \"id\": \"0\"\n" +
+                "    },\n" +
+                "    \"strategies\": [\n" +
+                "      {\n" +
+                "        \"algorithmID\": \"0\",\n" +
+                "        \"trafficType\": \"0\"\n" +
+                "      }\n" +
+                "    ]\n" +
+                "  }\n" +
                 "}";
 
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> propositionData = objectMapper.readValue(validProposition, Map.class);
+        Map<String, Object> propositionData = objectMapper.readValue(validProposition, new TypeReference<Map<String, Object>>() {});
         Proposition proposition = Proposition.fromEventData(propositionData);
         assert proposition != null;
         Offer offer = proposition.getOffers().get(0);
@@ -1165,16 +1174,16 @@ public class OptimizeFunctionalTests {
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
-        final Map<String, Object> propositionInteractionDetailsMap = (Map<String, Object>)propositionInteractionDetailsList.get(0);
-        assertEquals("de03ac85-802a-4331-a905-a57053164d35", propositionInteractionDetailsMap.get("id"));
-        assertEquals("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionInteractionDetailsMap.get("scope"));
-        final Map<String, Object> scopeDetails = (Map<String, Object>)propositionInteractionDetailsMap.get("scopeDetails");
+        final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
+        assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionInteractionDetailsMap.get("id"));
+        assertEquals("myMbox", propositionInteractionDetailsMap.get("scope"));
+        final Map<String, Object> scopeDetails = (Map<String, Object>) propositionInteractionDetailsMap.get("scopeDetails");
         assertNotNull(scopeDetails);
-        assertTrue(scopeDetails.isEmpty());
+        assertTrue(scopeDetails.size() > 0);
         final List<Map<String, Object>> items = (List<Map<String, Object>>)propositionInteractionDetailsMap.get("items");
         assertNotNull(items);
         assertEquals(1, items.size());
-        assertEquals("xcore:personalized-offer:1111111111111111", items.get(0).get("id"));
+        assertEquals("246315", items.get(0).get("id"));
 
 
 
@@ -1210,7 +1219,7 @@ public class OptimizeFunctionalTests {
                 "}";
 
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> propositionData = objectMapper.readValue(validProposition, Map.class);
+        Map<String, Object> propositionData = objectMapper.readValue(validProposition, new TypeReference<Map<String, Object>>() {});
 
         final Proposition proposition = Proposition.fromEventData(propositionData);
 
