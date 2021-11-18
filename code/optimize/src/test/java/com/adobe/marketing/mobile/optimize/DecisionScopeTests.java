@@ -37,6 +37,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 
+
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(Base64.class)
 public class DecisionScopeTests {
