@@ -38,7 +38,7 @@ public class Proposition {
      * @param scope {@code String} containing encoded scope.
      * @param scopeDetails {@code Map<String, Object>} containing scope details.
      */
-    Proposition(final String id, final List<Offer> offers, final String scope, final Map<String, Object> scopeDetails) {
+    public Proposition(final String id, final List<Offer> offers, final String scope, final Map<String, Object> scopeDetails) {
         this.id = id != null ? id : "";
         this.scope = scope != null ? scope : "";
         this.scopeDetails = scopeDetails != null ? scopeDetails : new HashMap<String, Object>();
