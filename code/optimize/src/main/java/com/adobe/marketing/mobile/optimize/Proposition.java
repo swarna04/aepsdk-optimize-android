@@ -38,7 +38,7 @@ public class Proposition {
      * @param scope {@code String} containing encoded scope.
      * @param scopeDetails {@code Map<String, Object>} containing scope details.
      */
-    public Proposition(final String id, final List<Offer> offers, final String scope, final Map<String, Object> scopeDetails) {
+    Proposition(final String id, final List<Offer> offers, final String scope, final Map<String, Object> scopeDetails) {
         this.id = id != null ? id : "";
         this.scope = scope != null ? scope : "";
         this.scopeDetails = scopeDetails != null ? scopeDetails : new HashMap<String, Object>();
@@ -116,7 +116,7 @@ public class Proposition {
      * @param data {@code Map<String, Object>} containing proposition data.
      * @return {@code Proposition} object or null.
      */
-    static Proposition fromEventData(final Map<String, Object> data) {
+    public static Proposition fromEventData(final Map<String, Object> data) {
         if (OptimizeUtils.isNullOrEmpty(data)) {
             MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Proposition object, provided data Map is empty or null.");
             return null;
