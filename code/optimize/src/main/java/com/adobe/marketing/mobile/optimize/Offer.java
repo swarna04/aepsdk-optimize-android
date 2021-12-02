@@ -132,20 +132,6 @@ public class Offer {
         }
 
         /**
-         * Sets the {@link Proposition} for this Offer. The {@code Proposition} reference will be maintained as a {@link SoftReference}
-         *
-         * @param proposition reference to {@code Proposition} this {@code Offer} belongs to
-         * @return this Offer's {@link Builder}
-         * @throws UnsupportedOperationException if this method is invoked after {@link Builder#build()}.
-         */
-        public Builder setProposition(final Proposition proposition) {
-            throwIfAlreadyBuilt();
-
-            offer.propositionReference = new SoftReference<Proposition>(proposition);
-            return this;
-        }
-
-        /**
          * Builds and returns the {@code Offer} object.
          *
          * @return {@link Offer} object or null.
