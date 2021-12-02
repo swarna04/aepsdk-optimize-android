@@ -116,7 +116,7 @@ public class Proposition {
      * @param data {@code Map<String, Object>} containing proposition data.
      * @return {@code Proposition} object or null.
      */
-    static Proposition fromEventData(final Map<String, Object> data) {
+    public static Proposition fromEventData(final Map<String, Object> data) {
         if (OptimizeUtils.isNullOrEmpty(data)) {
             MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Proposition object, provided data Map is empty or null.");
             return null;
