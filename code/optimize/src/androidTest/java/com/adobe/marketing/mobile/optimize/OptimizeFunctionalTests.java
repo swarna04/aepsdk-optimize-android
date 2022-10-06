@@ -78,7 +78,7 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(OptimizeTestConstants.EXTENSION_VERSION, Optimize.extensionVersion());
     }
 
-    //2
+    //2a
     @Test
     public void testUpdatePropositions_validDecisionScope() throws InterruptedException {
         //Setup
@@ -120,6 +120,99 @@ public class OptimizeFunctionalTests {
         Assert.assertNotNull(decisionScopeList);
         Assert.assertEquals(1, decisionScopeList.size());
         Assert.assertEquals(decisionScopeName, decisionScopeList.get(0));
+    }
+
+    //2b
+    @Test
+    public void testUpdatePropositions_validNonEncodedDecisionScope() throws InterruptedException {
+        //Setup
+        final String activityId = "xcore:offer-activity:1111111111111111";
+        final String placementId = "xcore:offer-placement:1111111111111111";
+
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        MobileCore.updateConfiguration(configData);
+
+        //Action
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(activityId, placementId)), null, null);
+
+        //Assert
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+
+        Assert.assertNotNull(eventsListOptimize);
+        Assert.assertNotNull(eventsListEdge);
+        Assert.assertEquals(1, eventsListOptimize.size());
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event event = eventsListOptimize.get(0);
+        Map<String, Object> eventData = event.getEventData();
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
+        Assert.assertTrue(eventData.size() > 0);
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+        List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
+        Assert.assertEquals(1, decisionScopes.size());
+        Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", decisionScopes.get(0).get("name"));
+
+        //Validating Event data of Edge Request event
+        Event edgeEvent = eventsListEdge.get(0);
+        Assert.assertNotNull(edgeEvent);
+        Map<String, Object> edgeEventData = edgeEvent.getEventData();
+        Assert.assertNotNull(edgeEventData);
+        Assert.assertTrue(edgeEventData.size() > 0);
+        Assert.assertEquals("personalization.request", ((Map<String, Object>) edgeEventData.get("xdm")).get("eventType"));
+        Map<String, Object> personalizationMap = (Map<String, Object>) ((Map<String, Object>) edgeEventData.get("query")).get("personalization");
+        List<String> decisionScopeList = (List<String>) personalizationMap.get("decisionScopes");
+        Assert.assertNotNull(decisionScopeList);
+        Assert.assertEquals(1, decisionScopeList.size());
+        Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", decisionScopeList.get(0));
+    }
+
+    //2c
+    @Test
+    public void testUpdatePropositions_validNonEncodedDecisionScopeWithItemCount() throws InterruptedException {
+        //Setup
+        final String activityId = "xcore:offer-activity:1111111111111111";
+        final String placementId = "xcore:offer-placement:1111111111111111";
+        final int itemCount = 30;
+
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        MobileCore.updateConfiguration(configData);
+
+        //Action
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(activityId, placementId, itemCount)), null, null);
+
+        //Assert
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+
+        Assert.assertNotNull(eventsListOptimize);
+        Assert.assertNotNull(eventsListEdge);
+        Assert.assertEquals(1, eventsListOptimize.size());
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event event = eventsListOptimize.get(0);
+        Map<String, Object> eventData = event.getEventData();
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
+        Assert.assertTrue(eventData.size() > 0);
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+        List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
+        Assert.assertEquals(1, decisionScopes.size());
+        Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEiLCJpdGVtQ291bnQiOjMwfQ==", decisionScopes.get(0).get("name"));
+
+        //Validating Event data of Edge Request event
+        Event edgeEvent = eventsListEdge.get(0);
+        Assert.assertNotNull(edgeEvent);
+        Map<String, Object> edgeEventData = edgeEvent.getEventData();
+        Assert.assertNotNull(edgeEventData);
+        Assert.assertTrue(edgeEventData.size() > 0);
+        Assert.assertEquals("personalization.request", ((Map<String, Object>) edgeEventData.get("xdm")).get("eventType"));
+        Map<String, Object> personalizationMap = (Map<String, Object>) ((Map<String, Object>) edgeEventData.get("query")).get("personalization");
+        List<String> decisionScopeList = (List<String>) personalizationMap.get("decisionScopes");
+        Assert.assertNotNull(decisionScopeList);
+        Assert.assertEquals(1, decisionScopeList.size());
+        Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEiLCJpdGVtQ291bnQiOjMwfQ==", decisionScopeList.get(0));
     }
 
     //3
