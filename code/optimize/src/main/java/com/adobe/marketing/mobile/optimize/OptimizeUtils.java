@@ -65,7 +65,7 @@ class OptimizeUtils {
         if (isNullOrEmpty(str)) {
             return str;
         }
-        return Base64.encodeToString(str.getBytes(), Base64.DEFAULT);
+        return Base64.encodeToString(str.getBytes(), Base64.NO_WRAP);
     }
 
     /**
@@ -83,7 +83,7 @@ class OptimizeUtils {
 
         String output = null;
         try {
-            output = new String(Base64.decode(str.getBytes(), Base64.DEFAULT));
+            output = new String(Base64.decode(str, Base64.DEFAULT));
         } catch(final IllegalArgumentException ex) {
             MobileCore.log(LoggingMode.DEBUG, LOG_TAG, String.format("Base64 decode failed for the given string (%s) with exception: %s", str, ex.getLocalizedMessage()));
         }
