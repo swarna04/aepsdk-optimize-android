@@ -66,10 +66,10 @@ public class OptimizeTests {
                 return java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]);
             }
         });
-        Mockito.when(Base64.decode((byte[]) any(), anyInt())).thenAnswer(new Answer<byte[]>() {
+        Mockito.when(Base64.decode(anyString(), anyInt())).thenAnswer(new Answer<byte[]>() {
             @Override
             public byte[] answer(InvocationOnMock invocation) throws Throwable {
-                return java.util.Base64.getDecoder().decode((byte[]) invocation.getArguments()[0]);
+                return java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]);
             }
         });
     }
@@ -84,7 +84,7 @@ public class OptimizeTests {
     public void test_extensionVersion() {
         // test
         final String extensionVersion = Optimize.extensionVersion();
-        assertEquals("extensionVersion API should return the correct version string.", "1.0.0",
+        assertEquals("extensionVersion API should return the correct version string.", "1.0.1",
                 extensionVersion);
     }
 
