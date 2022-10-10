@@ -14,7 +14,7 @@ package com.adobe.marketing.mobile.optimize;
 
 public class OptimizeTestConstants {
 
-    static final String EXTENSION_VERSION = "1.0.0";
+    static final String EXTENSION_VERSION = "1.0.1";
 
     public final static class EventType {
         public static final String MONITOR = "com.adobe.functional.eventType.monitor";

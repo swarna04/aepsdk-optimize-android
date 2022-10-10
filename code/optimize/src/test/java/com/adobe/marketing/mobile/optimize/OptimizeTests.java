@@ -84,7 +84,7 @@ public class OptimizeTests {
     public void test_extensionVersion() {
         // test
         final String extensionVersion = Optimize.extensionVersion();
-        assertEquals("extensionVersion API should return the correct version string.", "1.0.0",
+        assertEquals("extensionVersion API should return the correct version string.", "1.0.1",
                 extensionVersion);
     }
 
