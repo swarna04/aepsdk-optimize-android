@@ -133,6 +133,9 @@ class OptimizeConstants {
         static final String EXPERIENCE = "_experience";
         static final String EXPERIENCE_DECISIONING = "decisioning";
         static final String DECISIONING_PROPOSITION_ID = "propositionID";
+        static final String DECISIONING_PROPOSITION_EVENT_TYPE = "propositionEventType";
+        static final String PROPOSITION_EVENT_TYPE_DISPLAY = "display";
+        static final String PROPOSITION_EVENT_TYPE_INTERACT = "interact";
         static final String DECISIONING_PROPOSITIONS = "propositions";
         static final String DECISIONING_PROPOSITIONS_ID = "id";
         static final String DECISIONING_PROPOSITIONS_SCOPE = "scope";

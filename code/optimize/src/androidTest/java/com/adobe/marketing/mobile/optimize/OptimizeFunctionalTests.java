@@ -939,8 +939,14 @@ public class OptimizeFunctionalTests {
         Map<String, Object> xdm = (Map<String, Object>) edgeRequestEventList.get(0).getEventData().get("xdm");
         Assert.assertEquals("decisioning.propositionDisplay", xdm.get("eventType"));
 
-        List<Map<String, Object>> propositionList = (List<Map<String, Object>>) ((Map<String, Object>) ((Map<String, Object>) xdm.get("_experience")).get("decisioning"))
-                .get("propositions");
+        Map<String, Object> experience =  (Map<String, Object>)xdm.get("_experience");
+        assertNotNull(experience);
+        Map<String, Object> decisioning =  (Map<String, Object>)experience.get("decisioning");
+        assertNotNull(decisioning);
+        Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("display"));
+        List<Map<String, Object>> propositionList = (List<Map<String, Object>>)decisioning.get("propositions");
         Assert.assertNotNull(propositionList);
         Assert.assertEquals(1, propositionList.size());
         Map<String, Object> propositionData = propositionList.get(0);
@@ -1007,8 +1013,14 @@ public class OptimizeFunctionalTests {
         Map<String, Object> xdm = (Map<String, Object>) edgeRequestEventList.get(0).getEventData().get("xdm");
         Assert.assertEquals("decisioning.propositionInteract", xdm.get("eventType"));
 
-        List<Map<String, Object>> propositionList = (List<Map<String, Object>>) ((Map<String, Object>) ((Map<String, Object>) xdm.get("_experience")).get("decisioning"))
-                .get("propositions");
+        Map<String, Object> experience =  (Map<String, Object>)xdm.get("_experience");
+        assertNotNull(experience);
+        Map<String, Object> decisioning =  (Map<String, Object>)experience.get("decisioning");
+        assertNotNull(decisioning);
+        Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("interact"));
+        List<Map<String, Object>> propositionList = (List<Map<String, Object>>)decisioning.get("propositions");
         Assert.assertNotNull(propositionList);
         Assert.assertEquals(1, propositionList.size());
         Map<String, Object> propositionData = propositionList.get(0);
@@ -1075,8 +1087,14 @@ public class OptimizeFunctionalTests {
         Map<String, Object> xdm = (Map<String, Object>) edgeRequestEventList.get(0).getEventData().get("xdm");
         Assert.assertEquals("decisioning.propositionInteract", xdm.get("eventType"));
 
-        List<Map<String, Object>> propositionList = (List<Map<String, Object>>) ((Map<String, Object>) ((Map<String, Object>) xdm.get("_experience")).get("decisioning"))
-                .get("propositions");
+        Map<String, Object> experience =  (Map<String, Object>)xdm.get("_experience");
+        assertNotNull(experience);
+        Map<String, Object> decisioning =  (Map<String, Object>)experience.get("decisioning");
+        assertNotNull(decisioning);
+        Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("interact"));
+        List<Map<String, Object>> propositionList = (List<Map<String, Object>>)decisioning.get("propositions");
         Assert.assertNotNull(propositionList);
         Assert.assertEquals(1, propositionList.size());
         Map<String, Object> propositionData = propositionList.get(0);
@@ -1363,6 +1381,9 @@ public class OptimizeFunctionalTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("display"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
@@ -1432,6 +1453,9 @@ public class OptimizeFunctionalTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("interact"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());

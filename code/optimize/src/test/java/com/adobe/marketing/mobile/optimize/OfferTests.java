@@ -296,6 +296,9 @@ public class OfferTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("display"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
@@ -332,6 +335,9 @@ public class OfferTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("display"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
@@ -397,6 +403,9 @@ public class OfferTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("interact"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
@@ -433,6 +442,9 @@ public class OfferTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("interact"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
@@ -509,6 +521,9 @@ public class OfferTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("display"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
@@ -556,6 +571,9 @@ public class OfferTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("display"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
@@ -633,6 +651,9 @@ public class OfferTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("interact"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
@@ -680,6 +701,9 @@ public class OfferTests {
         assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        assertNotNull(propositionEventType);
+        assertEquals(1, propositionEventType.get("interact"));
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
         assertNotNull(propositionInteractionDetailsList);
         assertEquals(1, propositionInteractionDetailsList.size());
