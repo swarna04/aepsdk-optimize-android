@@ -355,11 +355,10 @@ public class Offer {
         decisioningPropositions.add(propositionsData);
 
         final Map<String, Object> propositionEventType = new HashMap<>();
-        if (experienceEventType.equals(OptimizeConstants.JsonValues.EE_EVENT_TYPE_PROPOSITION_DISPLAY)) {
-            propositionEventType.put(OptimizeConstants.JsonKeys.PROPOSITION_EVENT_TYPE_DISPLAY, 1);
-        } else {
-            propositionEventType.put(OptimizeConstants.JsonKeys.PROPOSITION_EVENT_TYPE_INTERACT, 1);
-        }
+        final String propEventType = experienceEventType.equals(OptimizeConstants.JsonValues.EE_EVENT_TYPE_PROPOSITION_DISPLAY) ?
+                OptimizeConstants.JsonKeys.PROPOSITION_EVENT_TYPE_DISPLAY :
+                OptimizeConstants.JsonKeys.PROPOSITION_EVENT_TYPE_INTERACT;
+        propositionEventType.put(propEventType, 1);
 
         final Map<String, Object> experienceDecisioning = new HashMap<>();
         experienceDecisioning.put(OptimizeConstants.JsonKeys.DECISIONING_PROPOSITION_EVENT_TYPE, propositionEventType);
