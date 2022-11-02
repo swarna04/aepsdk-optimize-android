@@ -1061,7 +1061,7 @@ public class OptimizeFunctionalTests {
                 "            ]\n" +
                 "        }\n";
         ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> testDecisionScopesMap = objectMapper.readValue(testDecisionScopes, new TypeReference<Map<String, Object>>() {});
+        final Map<String, Object> testDecisionScopesMap = objectMapper.readValue(testDecisionScopes, new TypeReference<Map<String, Object>>() {});
 
         Offer offer = new Offer.Builder("246315", OfferType.TEXT, "Text Offer!!").build();
         Proposition proposition = new Proposition(
@@ -1076,36 +1076,36 @@ public class OptimizeFunctionalTests {
         offer.tapped();
 
         //Assert
-        List<Event> optimizeRequestEventsList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
-        List<Event> edgeRequestEventList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        final List<Event> optimizeRequestEventsList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        final List<Event> edgeRequestEventList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
 
         Assert.assertNotNull(optimizeRequestEventsList);
         Assert.assertEquals(1, optimizeRequestEventsList.size());
         Assert.assertNotNull(edgeRequestEventList);
         Assert.assertEquals(1, edgeRequestEventList.size());
 
-        Map<String, Object> xdm = (Map<String, Object>) edgeRequestEventList.get(0).getEventData().get("xdm");
+        final Map<String, Object> xdm = (Map<String, Object>) edgeRequestEventList.get(0).getEventData().get("xdm");
         Assert.assertEquals("decisioning.propositionInteract", xdm.get("eventType"));
 
-        Map<String, Object> experience =  (Map<String, Object>)xdm.get("_experience");
+        final Map<String, Object> experience =  (Map<String, Object>)xdm.get("_experience");
         assertNotNull(experience);
-        Map<String, Object> decisioning =  (Map<String, Object>)experience.get("decisioning");
+        final Map<String, Object> decisioning =  (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
-        Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
+        final Map<String, Object> propositionEventType = (Map<String, Object>)decisioning.get("propositionEventType");
         assertNotNull(propositionEventType);
         assertEquals(1, propositionEventType.get("interact"));
-        List<Map<String, Object>> propositionList = (List<Map<String, Object>>)decisioning.get("propositions");
+        final List<Map<String, Object>> propositionList = (List<Map<String, Object>>)decisioning.get("propositions");
         Assert.assertNotNull(propositionList);
         Assert.assertEquals(1, propositionList.size());
-        Map<String, Object> propositionData = propositionList.get(0);
-        List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) propositionData.get("propositions");
+        final Map<String, Object> propositionData = propositionList.get(0);
+        final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) propositionData.get("propositions");
         Assert.assertNotNull(propositionList);
         Assert.assertEquals(1, propositionList.size());
-        Map<String, Object> propositionMap = propositionList.get(0);
+        final Map<String, Object> propositionMap = propositionList.get(0);
         Assert.assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionMap.get("id"));
         Assert.assertEquals("myMbox", propositionMap.get("scope"));
         Assert.assertEquals(testDecisionScopesMap, propositionMap.get("scopeDetails"));
-        List<Map<String, Object>> itemsList = (List<Map<String, Object>>) propositionMap.get("items");
+        final List<Map<String, Object>> itemsList = (List<Map<String, Object>>) propositionMap.get("items");
         Assert.assertNotNull(itemsList);
         Assert.assertEquals(1, itemsList.size());
         Assert.assertEquals("246315", itemsList.get(0).get("id"));
