@@ -68,6 +68,7 @@ class OptimizeExtension extends Extension {
      */
     protected OptimizeExtension(final ExtensionApi extensionApi) {
         super(extensionApi);
+
         cachedPropositions = new HashMap<>();
     }
 
@@ -482,6 +483,12 @@ class OptimizeExtension extends Extension {
             }
             validScopeNames.add(scope.getName());
         }
+
+        if (validScopeNames.size() == 0) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "No valid decision scopes are retrieved, provided list of decision scopes has no valid scope.");
+            return null;
+        }
+
         return validScopeNames;
     }
 

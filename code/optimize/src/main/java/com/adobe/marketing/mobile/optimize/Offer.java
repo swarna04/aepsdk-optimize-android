@@ -511,7 +511,7 @@ public class Offer {
         if (o == null || getClass() != o.getClass()) return false;
 
         Offer that = (Offer) o;
-        if (!Objects.equals(id, that.id)) return false;
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
         if (score != that.score) return false;
         if (etag != null ? !etag.equals(that.etag) : that.etag != null) return false;
         if (schema != null ? !schema.equals(that.schema) : that.schema != null) return false;

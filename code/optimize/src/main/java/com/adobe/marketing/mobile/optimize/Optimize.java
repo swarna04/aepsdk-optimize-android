@@ -87,7 +87,7 @@ public class Optimize {
         }
 
         if (validScopes.size() == 0) {
-            Log.warning(LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of decision scopes has no valid scope.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of decision scopes has no valid scope.");
             return;
         }
 
@@ -127,7 +127,7 @@ public class Optimize {
     public static void getPropositions(@NonNull final List<DecisionScope> decisionScopes,
                                        final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
         if (OptimizeUtils.isNullOrEmpty(decisionScopes)) {
-            Log.warning(LOG_TAG, SELF_TAG, "Cannot get propositions, provided list of decision scopes is null or empty.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided list of decision scopes is null or empty.");
             failWithError(callback, AdobeError.UNEXPECTED_ERROR);
             return;
         }
@@ -141,7 +141,7 @@ public class Optimize {
         }
 
         if (validScopes.size() == 0) {
-            Log.warning(LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of decision scopes has no valid scope.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of decision scopes has no valid scope.");
             failWithError(callback, AdobeError.UNEXPECTED_ERROR);
             return;
         }

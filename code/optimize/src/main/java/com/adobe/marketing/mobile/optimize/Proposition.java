@@ -183,10 +183,10 @@ public class Proposition {
         if (o == null || getClass() != o.getClass()) return false;
 
         Proposition that = (Proposition) o;
-        if (!id.equals(that.id)) return false;
-        if (!offers.equals(that.offers)) return false;
-        if (!scope.equals(that.scope)) return false;
-        return scopeDetails.equals(that.scopeDetails);
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (offers != null ? !offers.equals(that.offers) : that.offers != null) return false;
+        if (scope != null ? !scope.equals(that.scope) : that.scope != null) return false;
+        return scopeDetails != null ? scopeDetails.equals(that.scopeDetails) : that.scopeDetails == null;
     }
 
     @Override
