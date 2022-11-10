@@ -20,6 +20,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Checkstyle
+          command: make checkstyle
+      - run:
           name: Javadoc
           command: make ci-javadoc
       - store_artifacts:

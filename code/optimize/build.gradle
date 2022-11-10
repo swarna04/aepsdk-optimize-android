@@ -56,6 +56,8 @@ android {
     }
 }
 
+apply from: '../checkstyle.gradle'
+
 android.libraryVariants.all { variant ->
     tasks.withType(Javadoc) {
         source = [android.sourceSets.main.java.sourceFiles, android.sourceSets.phone.java.sourceFiles]
@@ -202,22 +204,22 @@ task platformFunctionalTestJacocoReport(type: JacocoReport, dependsOn: "createPh
 
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
 
-    // Adobe Mobile SDK Core
-    implementation "com.adobe.marketing.mobile:core:${rootProject.mavenCoreVersion}"
+    // todo change Adobe Mobile SDK Core
+    implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-alpha.3'
 
     testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoCoreVersion}"
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
-    testImplementation 'org.powermock:powermock-api-mockito2:2.0.0'
-    testImplementation 'org.powermock:powermock-module-junit4:2.0.0'
     testImplementation 'org.json:json:20180813'
 
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    // todo check for core utility for this while changing tests
     androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
 
+    // todo change these once Android 2.0 snapshot is released
     androidTestImplementation "com.adobe.marketing.mobile:edge:1.+"
     androidTestImplementation "com.adobe.marketing.mobile:edgeidentity:1.+"
 }

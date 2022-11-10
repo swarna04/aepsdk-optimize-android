@@ -17,6 +17,9 @@ clean:
 	(rm -rf ci)
 	(rm -rf $(AAR_FILE_DIR))
 	(./code/gradlew -p code clean)
+	
+checkstyle:
+	(./code/gradlew -p code/optimize checkstyle)
 
 ci-build: create-ci
 	(mkdir -p ci/assemble)

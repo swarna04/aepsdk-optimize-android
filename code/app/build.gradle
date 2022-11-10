@@ -70,7 +70,7 @@ dependencies {
 
     // Adobe mobile SDKs
     implementation project(":optimize")
-    implementation "com.adobe.marketing.mobile:core:1.+"
+    implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-alpha.3'
     implementation "com.adobe.marketing.mobile:lifecycle:1.+"
     implementation "com.adobe.marketing.mobile:signal:1.+"
     implementation "com.adobe.marketing.mobile:edge:1.+"
