@@ -517,7 +517,7 @@ class OptimizeExtension extends Extension {
     }
 
     @VisibleForTesting
-    void setCachedPropositions(Map<DecisionScope, Proposition> cachedPropositions) {
+    void setCachedPropositions(final Map<DecisionScope, Proposition> cachedPropositions) {
         this.cachedPropositions = cachedPropositions;
     }
 }
