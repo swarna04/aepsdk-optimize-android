@@ -22,9 +22,9 @@ jobs:
       - run:
           name: Checkstyle
           command: make checkstyle
-      - run:
-          name: Javadoc
-          command: make ci-javadoc
+      #- run:
+      #    name: Javadoc
+      #    command: make ci-javadoc
       - store_artifacts:
           path: ci/javadoc/build/reports
 
