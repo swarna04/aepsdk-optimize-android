@@ -25,8 +25,8 @@ jobs:
       #- run:
       #    name: Javadoc
       #    command: make ci-javadoc
-      - store_artifacts:
-          path: ci/javadoc/build/reports
+      #- store_artifacts:
+      #    path: ci/javadoc/build/reports
 
       - run:
           name: Build
