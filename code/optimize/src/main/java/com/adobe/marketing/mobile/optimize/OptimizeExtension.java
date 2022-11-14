@@ -29,11 +29,12 @@ import java.util.List;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
 class OptimizeExtension extends Extension {
 
     private static final String SELF_TAG = "OptimizeExtension";
-    private final Map<DecisionScope, Proposition> cachedPropositions;
+    private Map<DecisionScope, Proposition> cachedPropositions;
 
     // List containing the schema strings for the proposition items supported by the SDK, sent in the personalization query request.
     final static List<String> supportedSchemas = Arrays.asList(
@@ -89,8 +90,8 @@ class OptimizeExtension extends Extension {
 
     @Override
     public boolean readyForEvent(final @NonNull Event event) {
-        if (event.getType().equalsIgnoreCase(OptimizeConstants.EventType.OPTIMIZE)
-                && event.getSource().equalsIgnoreCase(OptimizeConstants.EventSource.REQUEST_CONTENT)) {
+        if (OptimizeConstants.EventType.OPTIMIZE.equalsIgnoreCase(event.getType())
+                && OptimizeConstants.EventSource.REQUEST_CONTENT.equalsIgnoreCase(event.getSource())) {
             SharedStateResult configurationSharedState = getApi().getSharedState(OptimizeConstants.Configuration.EXTENSION_NAME, event, false, SharedStateResolution.ANY);
             return configurationSharedState != null && configurationSharedState.getStatus() == SharedStateStatus.SET;
         }
@@ -160,7 +161,7 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    void handleUpdatePropositions(@NonNull final Event event) {
+    private void handleUpdatePropositions(@NonNull final Event event) {
         final Map<String, Object> eventData = event.getEventData();
 
         final Map<String, Object> configData = retrieveConfigurationSharedState(event);
@@ -335,7 +336,7 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    void handleGetPropositions(@NonNull final Event event) {
+    private void handleGetPropositions(@NonNull final Event event) {
         final Map<String, Object> eventData = event.getEventData();
 
         try {
@@ -385,7 +386,7 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    void handleTrackPropositions(@NonNull final Event event) {
+    private void handleTrackPropositions(@NonNull final Event event) {
         final Map<String, Object> eventData = event.getEventData();
 
         final Map<String, Object> configData = retrieveConfigurationSharedState(event);
@@ -450,7 +451,7 @@ class OptimizeExtension extends Extension {
      * @param event incoming {@link Event} instance.
      * @return {@code Map<String, Object>} containing configuration data.
      */
-    Map<String, Object> retrieveConfigurationSharedState(final Event event) {
+    private Map<String, Object> retrieveConfigurationSharedState(final Event event) {
         SharedStateResult configurationSharedState = getApi().getSharedState(OptimizeConstants.Configuration.EXTENSION_NAME,
                 event,
                 false,
@@ -500,7 +501,7 @@ class OptimizeExtension extends Extension {
      */
     private Event createResponseEventWithError(final AdobeError error, final Event event) {
         final Map<String, Object> eventData = new HashMap<>();
-        eventData.put(OptimizeConstants.EventDataKeys.RESPONSE_ERROR, error);
+        eventData.put(OptimizeConstants.EventDataKeys.RESPONSE_ERROR, error.getErrorName());
 
         return new Event.Builder(OptimizeConstants.EventNames.OPTIMIZE_RESPONSE,
                 OptimizeConstants.EventType.OPTIMIZE,
@@ -508,5 +509,15 @@ class OptimizeExtension extends Extension {
                 .setEventData(eventData)
                 .inResponseToEvent(event)
                 .build();
+    }
+
+    @VisibleForTesting
+    Map<DecisionScope, Proposition> getCachedPropositions() {
+        return cachedPropositions;
+    }
+
+    @VisibleForTesting
+    void setCachedPropositions(Map<DecisionScope, Proposition> cachedPropositions) {
+        this.cachedPropositions = cachedPropositions;
     }
 }

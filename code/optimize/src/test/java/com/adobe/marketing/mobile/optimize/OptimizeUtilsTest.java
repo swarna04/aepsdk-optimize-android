@@ -14,15 +14,12 @@ package com.adobe.marketing.mobile.optimize;
 
 import android.util.Base64;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,25 +34,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(Base64.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
+@SuppressWarnings({"rawtypes"})
 public class OptimizeUtilsTest {
-    @Before
-    public void setup() {
-        PowerMockito.mockStatic(Base64.class);
-        Mockito.when(Base64.encodeToString((byte[]) any(), anyInt())).thenAnswer(new Answer<String>() {
-            @Override
-            public String answer(InvocationOnMock invocation) {
-                return java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]);
-            }
-        });
-        Mockito.when(Base64.decode(anyString(), anyInt())).thenAnswer(new Answer<byte[]>() {
-            @Override
-            public byte[] answer(InvocationOnMock invocation) throws Throwable {
-                return java.util.Base64.getDecoder().decode((String)invocation.getArguments()[0]);
-            }
-        });
-    }
 
     @Test
     public void testIsNullOrEmpty_nullMap() {
@@ -122,9 +103,13 @@ public class OptimizeUtilsTest {
 
     @Test
     public void testBase64encode_validString() {
-        // test
-        final String input = "This is a test string!";
-        assertEquals("VGhpcyBpcyBhIHRlc3Qgc3RyaW5nIQ==", OptimizeUtils.base64Encode(input));
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.encodeToString(any(), anyInt()))
+                    .thenAnswer((Answer) invocation -> java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]));
+            // test
+            final String input = "This is a test string!";
+            assertEquals("VGhpcyBpcyBhIHRlc3Qgc3RyaW5nIQ==", OptimizeUtils.base64Encode(input));
+        }
 
     }
 
@@ -138,10 +123,13 @@ public class OptimizeUtilsTest {
 
     @Test
     public void testBase64decode_validString() {
-        // test
-        final String input = "VGhpcyBpcyBhIHRlc3Qgc3RyaW5nIQ==";
-        assertEquals("This is a test string!", OptimizeUtils.base64Decode(input));
-
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final String input = "VGhpcyBpcyBhIHRlc3Qgc3RyaW5nIQ==";
+            assertEquals("This is a test string!", OptimizeUtils.base64Decode(input));
+        }
     }
 
     @Test
@@ -154,8 +142,12 @@ public class OptimizeUtilsTest {
 
     @Test
     public void testBase64decode_invalidString() {
-        // test
-        final String input = "VGhp=";
-        assertNull(OptimizeUtils.base64Decode(input));
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final String input = "VGhp=";
+            assertNull(OptimizeUtils.base64Decode(input));
+        }
     }
 }

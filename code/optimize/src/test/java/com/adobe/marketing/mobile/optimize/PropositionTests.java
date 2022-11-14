@@ -25,7 +25,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked"})
 public class PropositionTests {
     @Test
     public void testFromEventData_validProposition() throws Exception {

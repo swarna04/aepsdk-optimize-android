@@ -13,19 +13,16 @@
 package com.adobe.marketing.mobile.optimize;
 
 import com.adobe.marketing.mobile.Event;
-import com.adobe.marketing.mobile.ExtensionErrorCallback;
-import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.Log;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,17 +33,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Event.class, MobileCore.class})
+@RunWith(MockitoJUnitRunner.Silent.class)
 @SuppressWarnings("unchecked")
 public class OfferTests {
-    @Before
-    public void setup() {
-        PowerMockito.mockStatic(MobileCore.class);
-    }
 
     @Test
     public void testBuilder_validOffer() {
@@ -479,249 +471,255 @@ public class OfferTests {
 
     @Test
     public void testDisplayed_validProposition() throws Exception {
-        // setup
-        Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
-        final Proposition proposition = Proposition.fromEventData(propositionData);
-        assertNotNull(proposition);
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // setup
+            Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            assertNotNull(proposition);
 
-        assertEquals(1, proposition.getOffers().size());
-        Offer offer = proposition.getOffers().get(0);
-        assertNotNull(offer);
+            assertEquals(1, proposition.getOffers().size());
+            Offer offer = proposition.getOffers().get(0);
+            assertNotNull(offer);
 
-        final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
-        // test
-        offer.displayed();
+            // test
+            offer.displayed();
 
-        // verify
-        PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.dispatchEvent(eventCaptor.capture(), any(ExtensionErrorCallback.class));
-        final Event dispatchedEvent = eventCaptor.getValue();
-        assertEquals("com.adobe.eventType.optimize".toLowerCase(), dispatchedEvent.getType());
-        assertEquals("com.adobe.eventSource.requestContent".toLowerCase(), dispatchedEvent.getSource());
-        final Map<String, Object> eventData = dispatchedEvent.getEventData();
-        assertNotNull(eventData);
-        assertEquals("trackpropositions", eventData.get("requesttype"));
-        final Map<String, Object> propositionInteractions = (Map<String, Object>)eventData.get("propositioninteractions");
-        assertNotNull(propositionInteractions);
-        assertEquals("decisioning.propositionDisplay", propositionInteractions.get("eventType"));
-        final Map<String, Object> experience = (Map<String, Object>)propositionInteractions.get("_experience");
-        assertNotNull(experience);
-        final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
-        assertNotNull(decisioning);
-        final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
-        assertNotNull(propositionInteractionDetailsList);
-        assertEquals(1, propositionInteractionDetailsList.size());
-        final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
-        assertEquals("de03ac85-802a-4331-a905-a57053164d35", propositionInteractionDetailsMap.get("id"));
-        assertEquals("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionInteractionDetailsMap.get("scope"));
-        final Map<String, Object> scopeDetails = (Map<String, Object>)propositionInteractionDetailsMap.get("scopeDetails");
-        assertNotNull(scopeDetails);
-        assertTrue(scopeDetails.isEmpty());
-        final List<Map<String, Object>> items = (List<Map<String, Object>>)propositionInteractionDetailsMap.get("items");
-        assertNotNull(items);
-        assertEquals(1, items.size());
-        assertEquals("xcore:personalized-offer:1111111111111111", items.get(0).get("id"));
+            // verify
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
+            final Event dispatchedEvent = eventCaptor.getValue();
+            assertEquals("com.adobe.eventType.optimize", dispatchedEvent.getType());
+            assertEquals("com.adobe.eventSource.requestContent", dispatchedEvent.getSource());
+            final Map<String, Object> eventData = dispatchedEvent.getEventData();
+            assertNotNull(eventData);
+            assertEquals("trackpropositions", eventData.get("requesttype"));
+            final Map<String, Object> propositionInteractions = (Map<String, Object>) eventData.get("propositioninteractions");
+            assertNotNull(propositionInteractions);
+            assertEquals("decisioning.propositionDisplay", propositionInteractions.get("eventType"));
+            final Map<String, Object> experience = (Map<String, Object>) propositionInteractions.get("_experience");
+            assertNotNull(experience);
+            final Map<String, Object> decisioning = (Map<String, Object>) experience.get("decisioning");
+            assertNotNull(decisioning);
+            final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>) decisioning.get("propositions");
+            assertNotNull(propositionInteractionDetailsList);
+            assertEquals(1, propositionInteractionDetailsList.size());
+            final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
+            assertEquals("de03ac85-802a-4331-a905-a57053164d35", propositionInteractionDetailsMap.get("id"));
+            assertEquals("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionInteractionDetailsMap.get("scope"));
+            final Map<String, Object> scopeDetails = (Map<String, Object>) propositionInteractionDetailsMap.get("scopeDetails");
+            assertNotNull(scopeDetails);
+            assertTrue(scopeDetails.isEmpty());
+            final List<Map<String, Object>> items = (List<Map<String, Object>>) propositionInteractionDetailsMap.get("items");
+            assertNotNull(items);
+            assertEquals(1, items.size());
+            assertEquals("xcore:personalized-offer:1111111111111111", items.get(0).get("id"));
+        }
     }
 
     @Test
     public void testDisplayed_validPropositionFromTarget() throws Exception {
-        // setup
-        Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_TARGET.json"), HashMap.class);
-        final Proposition proposition = Proposition.fromEventData(propositionData);
-        assertNotNull(proposition);
-        assertNotNull(proposition.getOffers());
-        assertEquals(1, proposition.getOffers().size());
-        Offer offer = proposition.getOffers().get(0);
-        assertNotNull(offer);
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // setup
+            Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_TARGET.json"), HashMap.class);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            assertNotNull(proposition);
+            assertNotNull(proposition.getOffers());
+            assertEquals(1, proposition.getOffers().size());
+            Offer offer = proposition.getOffers().get(0);
+            assertNotNull(offer);
 
-        final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
-        // test
-        offer.displayed();
+            // test
+            offer.displayed();
 
-        // verify
-        PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.dispatchEvent(eventCaptor.capture(), any(ExtensionErrorCallback.class));
-        final Event dispatchedEvent = eventCaptor.getValue();
-        assertEquals("com.adobe.eventType.optimize".toLowerCase(), dispatchedEvent.getType());
-        assertEquals("com.adobe.eventSource.requestContent".toLowerCase(), dispatchedEvent.getSource());
-        final Map<String, Object> eventData = dispatchedEvent.getEventData();
-        assertNotNull(eventData);
-        assertEquals("trackpropositions", eventData.get("requesttype"));
-        final Map<String, Object> propositionInteractions = (Map<String, Object>)eventData.get("propositioninteractions");
-        assertNotNull(propositionInteractions);
-        assertEquals("decisioning.propositionDisplay", propositionInteractions.get("eventType"));
-        final Map<String, Object> experience = (Map<String, Object>)propositionInteractions.get("_experience");
-        assertNotNull(experience);
-        final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
-        assertNotNull(decisioning);
-        final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
-        assertNotNull(propositionInteractionDetailsList);
-        assertEquals(1, propositionInteractionDetailsList.size());
-        final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
-        assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionInteractionDetailsMap.get("id"));
-        assertEquals("myMbox", propositionInteractionDetailsMap.get("scope"));
-        final Map<String, Object> scopeDetails = (Map<String, Object>)propositionInteractionDetailsMap.get("scopeDetails");
-        assertNotNull(scopeDetails);
-        assertEquals(4, scopeDetails.size());
-        assertEquals("TGT", scopeDetails.get("decisionProvider"));
-        final Map<String, Object> sdActivity = (Map<String, Object>)scopeDetails.get("activity");
-        assertEquals("125589", sdActivity.get("id"));
-        final Map<String, Object> sdExperience = (Map<String, Object>)scopeDetails.get("experience");
-        assertEquals("0", sdExperience.get("id"));
-        final List<Map<String, Object>> sdStrategies = (List<Map<String, Object>>)scopeDetails.get("strategies");
-        assertNotNull(sdStrategies);
-        assertEquals(1, sdStrategies.size());
-        assertEquals("0", sdStrategies.get(0).get("algorithmID"));
-        assertEquals("0", sdStrategies.get(0).get("trafficType"));
-        final List<Map<String, Object>> items = (List<Map<String, Object>>)propositionInteractionDetailsMap.get("items");
-        assertNotNull(items);
-        assertEquals(1, items.size());
-        assertEquals("246315", items.get(0).get("id"));
+            // verify
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
+            final Event dispatchedEvent = eventCaptor.getValue();
+            assertEquals("com.adobe.eventType.optimize", dispatchedEvent.getType());
+            assertEquals("com.adobe.eventSource.requestContent", dispatchedEvent.getSource());
+            final Map<String, Object> eventData = dispatchedEvent.getEventData();
+            assertNotNull(eventData);
+            assertEquals("trackpropositions", eventData.get("requesttype"));
+            final Map<String, Object> propositionInteractions = (Map<String, Object>) eventData.get("propositioninteractions");
+            assertNotNull(propositionInteractions);
+            assertEquals("decisioning.propositionDisplay", propositionInteractions.get("eventType"));
+            final Map<String, Object> experience = (Map<String, Object>) propositionInteractions.get("_experience");
+            assertNotNull(experience);
+            final Map<String, Object> decisioning = (Map<String, Object>) experience.get("decisioning");
+            assertNotNull(decisioning);
+            final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>) decisioning.get("propositions");
+            assertNotNull(propositionInteractionDetailsList);
+            assertEquals(1, propositionInteractionDetailsList.size());
+            final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
+            assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionInteractionDetailsMap.get("id"));
+            assertEquals("myMbox", propositionInteractionDetailsMap.get("scope"));
+            final Map<String, Object> scopeDetails = (Map<String, Object>) propositionInteractionDetailsMap.get("scopeDetails");
+            assertNotNull(scopeDetails);
+            assertEquals(4, scopeDetails.size());
+            assertEquals("TGT", scopeDetails.get("decisionProvider"));
+            final Map<String, Object> sdActivity = (Map<String, Object>) scopeDetails.get("activity");
+            assertEquals("125589", sdActivity.get("id"));
+            final Map<String, Object> sdExperience = (Map<String, Object>) scopeDetails.get("experience");
+            assertEquals("0", sdExperience.get("id"));
+            final List<Map<String, Object>> sdStrategies = (List<Map<String, Object>>) scopeDetails.get("strategies");
+            assertNotNull(sdStrategies);
+            assertEquals(1, sdStrategies.size());
+            assertEquals("0", sdStrategies.get(0).get("algorithmID"));
+            assertEquals("0", sdStrategies.get(0).get("trafficType"));
+            final List<Map<String, Object>> items = (List<Map<String, Object>>) propositionInteractionDetailsMap.get("items");
+            assertNotNull(items);
+            assertEquals(1, items.size());
+            assertEquals("246315", items.get(0).get("id"));
+        }
     }
 
     @Test
     public void testDisplayed_nullPropositionReference() throws Exception {
-        // setup
-        Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
-        final Proposition proposition = Proposition.fromEventData(propositionData);
-        assertNotNull(proposition);
-        assertNotNull(proposition.getOffers());
-        assertEquals(1, proposition.getOffers().size());
-        Offer offer = proposition.getOffers().get(0);
-        assertNotNull(offer);
-        offer.propositionReference = null;
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // setup
+            Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            assertNotNull(proposition);
+            assertNotNull(proposition.getOffers());
+            assertEquals(1, proposition.getOffers().size());
+            Offer offer = proposition.getOffers().get(0);
+            assertNotNull(offer);
+            offer.propositionReference = null;
 
-        // test
-        offer.displayed();
+            // test
+            offer.displayed();
 
-        // verify
-        PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.log(any(LoggingMode.class), anyString(), anyString());
+            // verify
+            logMockedStatic.verify(() -> Log.debug(anyString(), anyString(), anyString()), times(1));
+        }
     }
 
     @Test
     public void testTapped_validProposition() throws Exception {
-        // setup
-        Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
-        final Proposition proposition = Proposition.fromEventData(propositionData);
-        assertNotNull(proposition);
-        assertNotNull(proposition.getOffers());
-        assertEquals(1, proposition.getOffers().size());
-        Offer offer = proposition.getOffers().get(0);
-        assertNotNull(offer);
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // setup
+            Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            assertNotNull(proposition);
+            assertNotNull(proposition.getOffers());
+            assertEquals(1, proposition.getOffers().size());
+            Offer offer = proposition.getOffers().get(0);
+            assertNotNull(offer);
 
-        final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
-        // test
-        offer.tapped();
+            // test
+            offer.tapped();
 
-        // verify
-        PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.dispatchEvent(eventCaptor.capture(), any(ExtensionErrorCallback.class));
-        final Event dispatchedEvent = eventCaptor.getValue();
-        assertEquals("com.adobe.eventType.optimize".toLowerCase(), dispatchedEvent.getType());
-        assertEquals("com.adobe.eventSource.requestContent".toLowerCase(), dispatchedEvent.getSource());
-        final Map<String, Object> eventData = dispatchedEvent.getEventData();
-        assertNotNull(eventData);
-        assertEquals("trackpropositions", eventData.get("requesttype"));
-        final Map<String, Object> propositionInteractions = (Map<String, Object>)eventData.get("propositioninteractions");
-        assertNotNull(propositionInteractions);
-        assertEquals("decisioning.propositionInteract", propositionInteractions.get("eventType"));
-        final Map<String, Object> experience = (Map<String, Object>)propositionInteractions.get("_experience");
-        assertNotNull(experience);
-        final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
-        assertNotNull(decisioning);
-        final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
-        assertNotNull(propositionInteractionDetailsList);
-        assertEquals(1, propositionInteractionDetailsList.size());
-        final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
-        assertEquals("de03ac85-802a-4331-a905-a57053164d35", propositionInteractionDetailsMap.get("id"));
-        assertEquals("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionInteractionDetailsMap.get("scope"));
-        final Map<String, Object> scopeDetails = (Map<String, Object>)propositionInteractionDetailsMap.get("scopeDetails");
-        assertNotNull(scopeDetails);
-        assertTrue(scopeDetails.isEmpty());
-        final List<Map<String, Object>> items = (List<Map<String, Object>>)propositionInteractionDetailsMap.get("items");
-        assertNotNull(items);
-        assertEquals(1, items.size());
-        assertEquals("xcore:personalized-offer:1111111111111111", items.get(0).get("id"));
+            // verify
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()), times(1));
+            final Event dispatchedEvent = eventCaptor.getValue();
+            assertEquals("com.adobe.eventType.optimize", dispatchedEvent.getType());
+            assertEquals("com.adobe.eventSource.requestContent", dispatchedEvent.getSource());
+            final Map<String, Object> eventData = dispatchedEvent.getEventData();
+            assertNotNull(eventData);
+            assertEquals("trackpropositions", eventData.get("requesttype"));
+            final Map<String, Object> propositionInteractions = (Map<String, Object>) eventData.get("propositioninteractions");
+            assertNotNull(propositionInteractions);
+            assertEquals("decisioning.propositionInteract", propositionInteractions.get("eventType"));
+            final Map<String, Object> experience = (Map<String, Object>) propositionInteractions.get("_experience");
+            assertNotNull(experience);
+            final Map<String, Object> decisioning = (Map<String, Object>) experience.get("decisioning");
+            assertNotNull(decisioning);
+            final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>) decisioning.get("propositions");
+            assertNotNull(propositionInteractionDetailsList);
+            assertEquals(1, propositionInteractionDetailsList.size());
+            final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
+            assertEquals("de03ac85-802a-4331-a905-a57053164d35", propositionInteractionDetailsMap.get("id"));
+            assertEquals("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionInteractionDetailsMap.get("scope"));
+            final Map<String, Object> scopeDetails = (Map<String, Object>) propositionInteractionDetailsMap.get("scopeDetails");
+            assertNotNull(scopeDetails);
+            assertTrue(scopeDetails.isEmpty());
+            final List<Map<String, Object>> items = (List<Map<String, Object>>) propositionInteractionDetailsMap.get("items");
+            assertNotNull(items);
+            assertEquals(1, items.size());
+            assertEquals("xcore:personalized-offer:1111111111111111", items.get(0).get("id"));
+        }
     }
 
     @Test
     public void testTapped_validPropositionFromTarget() throws Exception {
-        // setup
-        Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_TARGET.json"), HashMap.class);
-        final Proposition proposition = Proposition.fromEventData(propositionData);
-        assertNotNull(proposition);
-        assertNotNull(proposition.getOffers());
-        assertEquals(1, proposition.getOffers().size());
-        Offer offer = proposition.getOffers().get(0);
-        assertNotNull(offer);
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // setup
+            Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_TARGET.json"), HashMap.class);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            assertNotNull(proposition);
+            assertNotNull(proposition.getOffers());
+            assertEquals(1, proposition.getOffers().size());
+            Offer offer = proposition.getOffers().get(0);
+            assertNotNull(offer);
 
-        final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
 
-        // test
-        offer.tapped();
+            // test
+            offer.tapped();
 
-        // verify
-        PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.dispatchEvent(eventCaptor.capture(), any(ExtensionErrorCallback.class));
-        final Event dispatchedEvent = eventCaptor.getValue();
-        assertEquals("com.adobe.eventType.optimize".toLowerCase(), dispatchedEvent.getType());
-        assertEquals("com.adobe.eventSource.requestContent".toLowerCase(), dispatchedEvent.getSource());
-        final Map<String, Object> eventData = dispatchedEvent.getEventData();
-        assertNotNull(eventData);
-        assertEquals("trackpropositions", eventData.get("requesttype"));
-        final Map<String, Object> propositionInteractions = (Map<String, Object>)eventData.get("propositioninteractions");
-        assertNotNull(propositionInteractions);
-        assertEquals("decisioning.propositionInteract", propositionInteractions.get("eventType"));
-        final Map<String, Object> experience = (Map<String, Object>)propositionInteractions.get("_experience");
-        assertNotNull(experience);
-        final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
-        assertNotNull(decisioning);
-        final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
-        assertNotNull(propositionInteractionDetailsList);
-        assertEquals(1, propositionInteractionDetailsList.size());
-        final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
-        assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionInteractionDetailsMap.get("id"));
-        assertEquals("myMbox", propositionInteractionDetailsMap.get("scope"));
-        final Map<String, Object> scopeDetails = (Map<String, Object>)propositionInteractionDetailsMap.get("scopeDetails");
-        assertNotNull(scopeDetails);
-        assertEquals(4, scopeDetails.size());
-        assertEquals("TGT", scopeDetails.get("decisionProvider"));
-        final Map<String, Object> sdActivity = (Map<String, Object>)scopeDetails.get("activity");
-        assertEquals("125589", sdActivity.get("id"));
-        final Map<String, Object> sdExperience = (Map<String, Object>)scopeDetails.get("experience");
-        assertEquals("0", sdExperience.get("id"));
-        final List<Map<String, Object>> sdStrategies = (List<Map<String, Object>>)scopeDetails.get("strategies");
-        assertNotNull(sdStrategies);
-        assertEquals(1, sdStrategies.size());
-        assertEquals("0", sdStrategies.get(0).get("algorithmID"));
-        assertEquals("0", sdStrategies.get(0).get("trafficType"));
-        final List<Map<String, Object>> items = (List<Map<String, Object>>)propositionInteractionDetailsMap.get("items");
-        assertNotNull(items);
-        assertEquals(1, items.size());
-        assertEquals("246315", items.get(0).get("id"));
+            // verify
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()), times(1));
+            final Event dispatchedEvent = eventCaptor.getValue();
+            assertEquals("com.adobe.eventType.optimize", dispatchedEvent.getType());
+            assertEquals("com.adobe.eventSource.requestContent", dispatchedEvent.getSource());
+            final Map<String, Object> eventData = dispatchedEvent.getEventData();
+            assertNotNull(eventData);
+            assertEquals("trackpropositions", eventData.get("requesttype"));
+            final Map<String, Object> propositionInteractions = (Map<String, Object>) eventData.get("propositioninteractions");
+            assertNotNull(propositionInteractions);
+            assertEquals("decisioning.propositionInteract", propositionInteractions.get("eventType"));
+            final Map<String, Object> experience = (Map<String, Object>) propositionInteractions.get("_experience");
+            assertNotNull(experience);
+            final Map<String, Object> decisioning = (Map<String, Object>) experience.get("decisioning");
+            assertNotNull(decisioning);
+            final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>) decisioning.get("propositions");
+            assertNotNull(propositionInteractionDetailsList);
+            assertEquals(1, propositionInteractionDetailsList.size());
+            final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
+            assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionInteractionDetailsMap.get("id"));
+            assertEquals("myMbox", propositionInteractionDetailsMap.get("scope"));
+            final Map<String, Object> scopeDetails = (Map<String, Object>) propositionInteractionDetailsMap.get("scopeDetails");
+            assertNotNull(scopeDetails);
+            assertEquals(4, scopeDetails.size());
+            assertEquals("TGT", scopeDetails.get("decisionProvider"));
+            final Map<String, Object> sdActivity = (Map<String, Object>) scopeDetails.get("activity");
+            assertEquals("125589", sdActivity.get("id"));
+            final Map<String, Object> sdExperience = (Map<String, Object>) scopeDetails.get("experience");
+            assertEquals("0", sdExperience.get("id"));
+            final List<Map<String, Object>> sdStrategies = (List<Map<String, Object>>) scopeDetails.get("strategies");
+            assertNotNull(sdStrategies);
+            assertEquals(1, sdStrategies.size());
+            assertEquals("0", sdStrategies.get(0).get("algorithmID"));
+            assertEquals("0", sdStrategies.get(0).get("trafficType"));
+            final List<Map<String, Object>> items = (List<Map<String, Object>>) propositionInteractionDetailsMap.get("items");
+            assertNotNull(items);
+            assertEquals(1, items.size());
+            assertEquals("246315", items.get(0).get("id"));
+        }
     }
 
     @Test
     public void testTapped_nullPropositionReference() throws Exception {
-        // setup
-        Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
-        final Proposition proposition = Proposition.fromEventData(propositionData);
-        assertNotNull(proposition);
-        assertNotNull(proposition.getOffers());
-        assertEquals(1, proposition.getOffers().size());
-        Offer offer = proposition.getOffers().get(0);
-        assertNotNull(offer);
-        offer.propositionReference = null;
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // setup
+            Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            assertNotNull(proposition);
+            assertNotNull(proposition.getOffers());
+            assertEquals(1, proposition.getOffers().size());
+            Offer offer = proposition.getOffers().get(0);
+            assertNotNull(offer);
+            offer.propositionReference = null;
 
-        // test
-        offer.tapped();
+            // test
+            offer.tapped();
 
-        // verify
-        PowerMockito.verifyStatic(MobileCore.class, Mockito.times(1));
-        MobileCore.log(any(LoggingMode.class), anyString(), anyString());
+            // verify
+            logMockedStatic.verify(() -> Log.debug(anyString(), anyString(), anyString()), times(1));
+        }
     }
 }

@@ -207,21 +207,24 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.5.1'
 
     // todo change Adobe Mobile SDK Core
-    implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-alpha.3'
+    implementation 'com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT'
 
     testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoCoreVersion}"
+    testImplementation "org.mockito:mockito-inline:${rootProject.ext.mockitoCoreVersion}"
     testImplementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
     testImplementation 'org.json:json:20180813'
 
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
-    // todo check for core utility for this while changing tests
     androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
-
     // todo change these once Android 2.0 snapshot is released
-    androidTestImplementation "com.adobe.marketing.mobile:edge:1.+"
-    androidTestImplementation "com.adobe.marketing.mobile:edgeidentity:1.+"
+    androidTestImplementation("com.adobe.marketing.mobile:edge:1.+"){
+        transitive = false
+    }
+    androidTestImplementation("com.adobe.marketing.mobile:edgeidentity:1.+"){
+        transitive = false
+    }
 }
 
 tasks.withType(Test) {

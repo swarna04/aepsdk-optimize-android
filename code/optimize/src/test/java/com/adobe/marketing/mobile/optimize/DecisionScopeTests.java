@@ -14,16 +14,13 @@ package com.adobe.marketing.mobile.optimize;
 
 import android.util.Base64;
 
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,26 +35,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 
-
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(Base64.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
+@SuppressWarnings({"rawtypes"})
 public class DecisionScopeTests {
-    @Before
-    public void setup() {
-        PowerMockito.mockStatic(Base64.class);
-        Mockito.when(Base64.encodeToString((byte[]) any(), anyInt())).thenAnswer(new Answer<String>() {
-            @Override
-            public String answer(InvocationOnMock invocation) {
-                return java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]);
-            }
-        });
-        Mockito.when(Base64.decode(anyString(), anyInt())).thenAnswer(new Answer<byte[]>() {
-            @Override
-            public byte[] answer(InvocationOnMock invocation) throws Throwable {
-                return java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]);
-            }
-        });
-    }
 
     @Test
     public void testConstructor_validName() {
@@ -85,18 +65,26 @@ public class DecisionScopeTests {
 
     @Test
     public void testConstructor_defaultItemCount() {
-        // test
-        final DecisionScope scope = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111");
-        assertNotNull(scope);
-        assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scope.getName());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.encodeToString(any(), anyInt()))
+                    .thenAnswer((Answer) invocation -> java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111");
+            assertNotNull(scope);
+            assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scope.getName());
+        }
     }
 
     @Test
     public void testConstructor_itemCount() {
-        // test
-        final DecisionScope scope = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111", 10);
-        assertNotNull(scope);
-        assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEiLCJpdGVtQ291bnQiOjEwfQ==", scope.getName());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.encodeToString(any(), anyInt()))
+                    .thenAnswer((Answer) invocation -> java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111", 10);
+            assertNotNull(scope);
+            assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEiLCJpdGVtQ291bnQiOjEwfQ==", scope.getName());
+        }
     }
 
     @Test
@@ -141,9 +129,13 @@ public class DecisionScopeTests {
 
     @Test
     public void testIsValid_scopeWithValidName() {
-        // test
-        final DecisionScope scope = new DecisionScope("myMbox");
-        assertTrue(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("myMbox");
+            assertTrue(scope.isValid());
+        }
     }
 
     @Test
@@ -162,16 +154,28 @@ public class DecisionScopeTests {
 
     @Test
     public void testIsValid_scopeWithDefaultItemCount() {
-        // test
-        final DecisionScope scope = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111");
-        assertTrue(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.encodeToString(any(), anyInt()))
+                    .thenAnswer((Answer) invocation -> java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]));
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111");
+            assertTrue(scope.isValid());
+        }
     }
 
     @Test
     public void testIsValid_scopeWithItemCount() {
-        // test
-        final DecisionScope scope = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111", 10);
-        assertTrue(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.encodeToString(any(), anyInt()))
+                    .thenAnswer((Answer) invocation -> java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]));
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111", 10);
+            assertTrue(scope.isValid());
+        }
     }
 
     @Test
@@ -211,58 +215,91 @@ public class DecisionScopeTests {
 
     @Test
     public void testIsValid_encodedScopeWithDefaultItemCount() {
-        // test
-        final DecisionScope scope = new DecisionScope( "eyJ4ZG06YWN0aXZpdHlJZCI6Inhjb3JlOm9mZmVyLWFjdGl2aXR5OjExMTExMTExMTExMTExMTEiLCJ4ZG06cGxhY2VtZW50SWQiOiJ4Y29yZTpvZmZlci1wbGFjZW1lbnQ6MTExMTExMTExMTExMTExMSJ9");
-        assertTrue(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("eyJ4ZG06YWN0aXZpdHlJZCI6Inhjb3JlOm9mZmVyLWFjdGl2aXR5OjExMTExMTExMTExMTExMTEiLCJ4ZG06cGxhY2VtZW50SWQiOiJ4Y29yZTpvZmZlci1wbGFjZW1lbnQ6MTExMTExMTExMTExMTExMSJ9");
+            assertTrue(scope.isValid());
+        }
     }
 
     @Test
     public void testIsValid_encodedScopeWithItemCount() {
         // test
-        final DecisionScope scope = new DecisionScope( "eyJ4ZG06YWN0aXZpdHlJZCI6Inhjb3JlOm9mZmVyLWFjdGl2aXR5OjExMTExMTExMTExMTExMTEiLCJ4ZG06cGxhY2VtZW50SWQiOiJ4Y29yZTpvZmZlci1wbGFjZW1lbnQ6MTExMTExMTExMTExMTExMSIsInhkbTppdGVtQ291bnQiOjEwMH0=");
-        assertTrue(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            final DecisionScope scope = new DecisionScope("eyJ4ZG06YWN0aXZpdHlJZCI6Inhjb3JlOm9mZmVyLWFjdGl2aXR5OjExMTExMTExMTExMTExMTEiLCJ4ZG06cGxhY2VtZW50SWQiOiJ4Y29yZTpvZmZlci1wbGFjZW1lbnQ6MTExMTExMTExMTExMTExMSIsInhkbTppdGVtQ291bnQiOjEwMH0=");
+            assertTrue(scope.isValid());
+        }
     }
 
     @Test
     public void testIsValid_encodedScopeWithValidName() {
-        // test
-        final DecisionScope scope = new DecisionScope( "eyJ4ZG06bmFtZSI6ImNvbS5hZG9iZS5TYW1wbGVBcHAifQ==");
-        assertTrue(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("eyJ4ZG06bmFtZSI6ImNvbS5hZG9iZS5TYW1wbGVBcHAifQ==");
+            assertTrue(scope.isValid());
+        }
     }
 
     @Test
     public void testIsValid_encodedScopeWithEmptyName() {
-        // test
-        final DecisionScope scope = new DecisionScope( "eyJ4ZG06bmFtZSI6IiJ9");
-        assertFalse(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("eyJ4ZG06bmFtZSI6IiJ9");
+            assertFalse(scope.isValid());
+        }
+
     }
 
     @Test
     public void testIsValid_encodedScopeWithEmptyActivityId() {
-        // test
-        final DecisionScope scope = new DecisionScope( "eyJ4ZG06YWN0aXZpdHlJZCI6IiIsInhkbTpwbGFjZW1lbnRJZCI6Inhjb3JlOm9mZmVyLXBsYWNlbWVudDoxMTExMTExMTExMTExMTExIn0=");
-        assertFalse(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("eyJ4ZG06YWN0aXZpdHlJZCI6IiIsInhkbTpwbGFjZW1lbnRJZCI6Inhjb3JlOm9mZmVyLXBsYWNlbWVudDoxMTExMTExMTExMTExMTExIn0=");
+            assertFalse(scope.isValid());
+        }
     }
 
     @Test
     public void testIsValid_encodedScopeWithEmptyPlacementId() {
-        // test
-        final DecisionScope scope = new DecisionScope( "eyJ4ZG06YWN0aXZpdHlJZCI6Inhjb3JlOm9mZmVyLWFjdGl2aXR5OjExMTExMTExMTExMTExMTEiLCJ4ZG06cGxhY2VtZW50SWQiOiIifQ==");
-        assertFalse(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("eyJ4ZG06YWN0aXZpdHlJZCI6Inhjb3JlOm9mZmVyLWFjdGl2aXR5OjExMTExMTExMTExMTExMTEiLCJ4ZG06cGxhY2VtZW50SWQiOiIifQ==");
+            assertFalse(scope.isValid());
+        }
     }
 
     @Test
     public void testIsValid_encodedScopeWithInvalidItemCount() {
-        // test
-        final DecisionScope scope = new DecisionScope( "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEiLCJpdGVtQ291bnQiOi0xfQ==");
-        assertFalse(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope( "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEiLCJpdGVtQ291bnQiOi0xfQ==");
+            assertFalse(scope.isValid());
+        }
     }
 
     @Test
     public void testIsValid_encodedScopeWithZeroItemCount() {
-        // test
-        final DecisionScope scope = new DecisionScope( "eyJ4ZG06YWN0aXZpdHlJZCI6Inhjb3JlOm9mZmVyLWFjdGl2aXR5OjExMTExMTExMTExMTExMTEiLCJ4ZG06cGxhY2VtZW50SWQiOiJ4Y29yZTpvZmZlci1wbGFjZW1lbnQ6MTExMTExMTExMTExMTExMSIsInhkbTppdGVtQ291bnQiOjB9");
-        assertFalse(scope.isValid());
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope = new DecisionScope("eyJ4ZG06YWN0aXZpdHlJZCI6Inhjb3JlOm9mZmVyLWFjdGl2aXR5OjExMTExMTExMTExMTExMTEiLCJ4ZG06cGxhY2VtZW50SWQiOiJ4Y29yZTpvZmZlci1wbGFjZW1lbnQ6MTExMTExMTExMTExMTExMSIsInhkbTppdGVtQ291bnQiOjB9");
+            assertFalse(scope.isValid());
+        }
     }
 
     @Ignore
@@ -274,26 +311,42 @@ public class DecisionScopeTests {
 
     @Test
     public void testEquals() {
-        // test
-        final DecisionScope scope1 = new DecisionScope("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==");
-        final DecisionScope scope2 = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111");
-        assertEquals(scope1, scope2);
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.encodeToString(any(), anyInt()))
+                    .thenAnswer((Answer) invocation -> java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]));
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope1 = new DecisionScope("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==");
+            final DecisionScope scope2 = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111");
+            assertEquals(scope1, scope2);
+        }
     }
 
     @Test
     public void testEquals_decisionScopeObjectContainsItemCount() {
-        // test
-        final DecisionScope scope1 = new DecisionScope("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEiLCJpdGVtQ291bnQiOjEwMH0=");
-        final DecisionScope scope2 = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111", 100);
-        assertEquals(scope1, scope2);
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.encodeToString(any(), anyInt()))
+                    .thenAnswer((Answer) invocation -> java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]));
+            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope1 = new DecisionScope("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEiLCJpdGVtQ291bnQiOjEwMH0=");
+            final DecisionScope scope2 = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111", 100);
+            assertEquals(scope1, scope2);
+        }
     }
 
     @Test
     public void testEquals_decisionScopeObjectsNotEqual() {
-        // test
-        final DecisionScope scope1 = new DecisionScope("mymbox");
-        final DecisionScope scope2 = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111");
-        assertNotEquals(scope1, scope2);
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.encodeToString(any(), anyInt()))
+                    .thenAnswer((Answer) invocation -> java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]));
+            // test
+            final DecisionScope scope1 = new DecisionScope("mymbox");
+            final DecisionScope scope2 = new DecisionScope("xcore:offer-activity:1111111111111111", "xcore:offer-placement:1111111111111111");
+            assertNotEquals(scope1, scope2);
+        }
     }
 
     @Test
@@ -330,7 +383,7 @@ public class DecisionScopeTests {
     @Test
     public void testFromEventData_emptyEventData() {
         // test
-        final DecisionScope scope = DecisionScope.fromEventData(new HashMap<String, Object>());
+        final DecisionScope scope = DecisionScope.fromEventData(new HashMap<>());
 
         // verify
         assertNull(scope);
