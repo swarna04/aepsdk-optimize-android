@@ -161,7 +161,7 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    private void handleUpdatePropositions(@NonNull final Event event) {
+    void handleUpdatePropositions(@NonNull final Event event) {
         final Map<String, Object> eventData = event.getEventData();
 
         final Map<String, Object> configData = retrieveConfigurationSharedState(event);
@@ -336,7 +336,7 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    private void handleGetPropositions(@NonNull final Event event) {
+    void handleGetPropositions(@NonNull final Event event) {
         final Map<String, Object> eventData = event.getEventData();
 
         try {
@@ -386,7 +386,7 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    private void handleTrackPropositions(@NonNull final Event event) {
+    void handleTrackPropositions(@NonNull final Event event) {
         final Map<String, Object> eventData = event.getEventData();
 
         final Map<String, Object> configData = retrieveConfigurationSharedState(event);

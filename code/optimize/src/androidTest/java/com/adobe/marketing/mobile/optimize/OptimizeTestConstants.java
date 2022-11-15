@@ -37,4 +37,8 @@ public class OptimizeTestConstants {
         public static final String RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
         public static final String REQUEST_RESET = "com.adobe.eventSource.requestReset";
     }
+
+    public final static class EventDataKeys {
+        public static final String STATE_OWNER = "stateowner";
+    }
 }

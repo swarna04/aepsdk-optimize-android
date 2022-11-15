@@ -31,10 +31,12 @@ import org.junit.runners.model.Statement;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -272,7 +274,49 @@ public class TestHelper {
             sleep(WAIT_TIMEOUT_MS);
         }
 
-        return receivedEvents.containsKey(eventSpec) ? receivedEvents.get(eventSpec) : Collections.<Event>emptyList();
+        return receivedEvents.containsKey(eventSpec) ? receivedEvents.get(eventSpec) : Collections.emptyList();
+    }
+
+    /**
+     * Synchronous call to get the shared state for the specified {@code stateOwner}.
+     * This API throws an assertion failure in case of timeout.
+     * @param stateOwner the owner extension of the shared state (typically the name of the extension)
+     * @param timeout how long should this method wait for the requested shared state, in milliseconds
+     * @return latest shared state of the given {@code stateOwner} or null if no shared state was found
+     * @throws InterruptedException
+     */
+    public static Map<String, Object> getSharedStateFor(final String stateOwner, int timeout) throws InterruptedException {
+        Event event = new Event.Builder("Get Shared State Request", OptimizeTestConstants.EventType.MONITOR,
+                OptimizeTestConstants.EventSource.SHARED_STATE_REQUEST)
+                .setEventData(new HashMap<String, Object>() {
+                    {
+                        put(OptimizeTestConstants.EventDataKeys.STATE_OWNER, stateOwner);
+                    }
+                })
+                .build();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Map<String, Object> sharedState = new HashMap<>();
+        MobileCore.dispatchEventWithResponseCallback(event,
+                WAIT_EVENT_TIMEOUT_MS,
+                new AdobeCallbackWithError<Event>() {
+                    @Override
+                    public void fail(AdobeError adobeError) {
+                        Log.error(OptimizeTestConstants.LOG_TAG, TAG, "Failed to get shared state for " + stateOwner + ": " + adobeError.getErrorName());
+                    }
+
+                    @Override
+                    public void call(Event event) {
+                        if (event.getEventData() != null) {
+                            sharedState.putAll(event.getEventData());
+                        }
+
+                        latch.countDown();
+                    }
+                });
+
+        assertTrue("Timeout waiting for shared state " + stateOwner, latch.await(timeout, TimeUnit.MILLISECONDS));
+        return sharedState.isEmpty() ? null : sharedState;
     }
 
     /**

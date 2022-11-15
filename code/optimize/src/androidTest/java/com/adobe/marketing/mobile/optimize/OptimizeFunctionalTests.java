@@ -21,14 +21,12 @@ import static org.junit.Assert.assertTrue;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.adobe.marketing.mobile.AdobeCallback;
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.ExtensionError;
 import com.adobe.marketing.mobile.ExtensionErrorCallback;
 import com.adobe.marketing.mobile.MobileCore;
-import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.TestHelper;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -59,6 +57,7 @@ public class OptimizeFunctionalTests {
 
     @Before
     public void setup() throws Exception {
+        // todo change once Edge Identity is fixed
         Optimize.registerExtension();
         Identity.registerExtension();
 
