@@ -16,6 +16,7 @@ import static com.adobe.marketing.mobile.TestHelper.resetTestExpectations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -27,6 +28,7 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.ExtensionError;
 import com.adobe.marketing.mobile.ExtensionErrorCallback;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.MobilePrivacyStatus;
 import com.adobe.marketing.mobile.TestHelper;
 import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -61,12 +63,7 @@ public class OptimizeFunctionalTests {
         Identity.registerExtension();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        MobileCore.start(new AdobeCallback<Object>() {
-            @Override
-            public void call(Object o) {
-                latch.countDown();
-            }
-        });
+        MobileCore.start(o -> latch.countDown());
 
         latch.await();
         resetTestExpectations();
@@ -85,7 +82,7 @@ public class OptimizeFunctionalTests {
         final String decisionScopeName = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
 
         //Action
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeName)), null, null);
@@ -100,8 +97,8 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(1, eventsListEdge.size());
         Event event = eventsListOptimize.get(0);
         Map<String, Object> eventData = event.getEventData();
-        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
-        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
         Assert.assertTrue(eventData.size() > 0);
         Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
         List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
@@ -131,7 +128,7 @@ public class OptimizeFunctionalTests {
 
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
 
         //Action
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(activityId, placementId)), null, null);
@@ -146,8 +143,8 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(1, eventsListEdge.size());
         Event event = eventsListOptimize.get(0);
         Map<String, Object> eventData = event.getEventData();
-        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
-        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
         Assert.assertTrue(eventData.size() > 0);
         Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
         List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
@@ -178,7 +175,7 @@ public class OptimizeFunctionalTests {
 
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
 
         //Action
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(activityId, placementId, itemCount)), null, null);
@@ -193,8 +190,8 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(1, eventsListEdge.size());
         Event event = eventsListOptimize.get(0);
         Map<String, Object> eventData = event.getEventData();
-        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
-        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
         Assert.assertTrue(eventData.size() > 0);
         Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
         List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
@@ -236,7 +233,7 @@ public class OptimizeFunctionalTests {
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         configData.put("optimize.datasetId", optimizeDatasetId);
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
 
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeName)), xdmMap, dataMap);
 
@@ -250,8 +247,8 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(1, eventsListEdge.size());
         Event event = eventsListOptimize.get(0);
         Map<String, Object> eventData = event.getEventData();
-        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
-        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
         Assert.assertTrue(eventData.size() > 0);
         Assert.assertEquals("MyXDMValue", ((Map<String, String>) eventData.get("xdm")).get("MyXDMKey"));
         Assert.assertEquals("MyDataValue", ((Map<String, String>) eventData.get("data")).get("MyDataKey"));
@@ -285,7 +282,7 @@ public class OptimizeFunctionalTests {
         final String decisionScopeName2 = "MyMbox";
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
 
         //Action
         Optimize.updatePropositions(
@@ -302,8 +299,8 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(1, eventsListEdge.size());
         Event event = eventsListOptimize.get(0);
         Map<String, Object> eventData = event.getEventData();
-        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
-        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
         Assert.assertTrue(eventData.size() > 0);
         Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
         List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
@@ -331,8 +328,8 @@ public class OptimizeFunctionalTests {
     public void testUpdatePropositions_ConfigNotAvailable() throws InterruptedException {
         //Setup
         final String decisionScopeName = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
-        TestHelper.clearSharedState();
-        Thread.sleep(1000);
+        clearUpdatedConfiguration();
+
         //Action
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeName)), null, null);
 
@@ -353,7 +350,7 @@ public class OptimizeFunctionalTests {
         final String decisionScopeName2 = "MyMbox";
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
 
         //Action
         Optimize.updatePropositions(
@@ -370,8 +367,8 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(1, eventsListEdge.size());
         Event event = eventsListOptimize.get(0);
         Map<String, Object> eventData = event.getEventData();
-        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE.toLowerCase(), event.getType());
-        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT.toLowerCase(), event.getSource());
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
         Assert.assertTrue(eventData.size() > 0);
         Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
         List<Map<String, String>> decisionScopes = (List<Map<String, String>>) eventData.get("decisionscopes");
@@ -399,7 +396,7 @@ public class OptimizeFunctionalTests {
         //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
         final String edgeResponseData = "{\n" +
@@ -480,7 +477,7 @@ public class OptimizeFunctionalTests {
 
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(1, propositionMap.size());
         Proposition proposition = propositionMap.get(decisionScope);
         Assert.assertNotNull(proposition);
@@ -506,7 +503,7 @@ public class OptimizeFunctionalTests {
         //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
         final String decisionScopeString = "myMbox1";
 
         final String edgeResponseData = "{\n" +
@@ -610,7 +607,7 @@ public class OptimizeFunctionalTests {
         final List<Event> optimizeResponseEventsList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.RESPONSE_CONTENT);
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(1, propositionMap.size());
 
         final Proposition proposition = propositionMap.get(decisionScope);
@@ -660,8 +657,8 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals("https://ns.adobe.com/personalization/json-content-item", offer.getSchema());
         Assert.assertEquals(OfferType.JSON, offer.getType());
         Assert.assertEquals("{\"device\":\"mobile\"}", offer.getContent());
-        Assert.assertNull(offer.getCharacteristics());
-        Assert.assertNull(offer.getLanguage());
+        assertNull(offer.getCharacteristics());
+        assertNull(offer.getLanguage());
     }
 
     //8
@@ -671,7 +668,7 @@ public class OptimizeFunctionalTests {
         //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
         final String edgeResponseData = "{\n" +
@@ -751,7 +748,7 @@ public class OptimizeFunctionalTests {
 
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(1, propositionMap.size());
 
         Assert.assertTrue(propositionMap.containsKey(decisionScope1));
@@ -779,7 +776,7 @@ public class OptimizeFunctionalTests {
         //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
         final String edgeResponseData = "{\n" +
@@ -860,7 +857,7 @@ public class OptimizeFunctionalTests {
 
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(0, propositionMap.size());
 
         Assert.assertFalse(propositionMap.containsKey(decisionScope1)); //Decision scope myMbox1 is not present in cache
@@ -873,7 +870,7 @@ public class OptimizeFunctionalTests {
         //setup
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
         final DecisionScope decisionScope1 = new DecisionScope("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==");
         final DecisionScope decisionScope2 = new DecisionScope("myMbox");
 
@@ -900,7 +897,7 @@ public class OptimizeFunctionalTests {
 
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(0, propositionMap.size());
 
         Assert.assertFalse(propositionMap.containsKey(decisionScope1));
@@ -913,7 +910,7 @@ public class OptimizeFunctionalTests {
         //setup
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
 
         Offer offer = new Offer.Builder("xcore:personalized-offer:1111111111111111", OfferType.TEXT, "Text Offer!!").build();
         Proposition proposition = new Proposition(
@@ -963,7 +960,7 @@ public class OptimizeFunctionalTests {
         //setup
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
         final String testScopeDetails = "        {\n" +
                 "        \"decisionProvider\": \"TGT\",\n" +
                 "                \"activity\": {\n" +
@@ -1032,7 +1029,7 @@ public class OptimizeFunctionalTests {
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         configData.put("optimize.datasetId", "111111111111111111111111");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
         final String testDecisionScopes = "        {\n" +
                 "        \"decisionProvider\": \"TGT\",\n" +
                 "                \"activity\": {\n" +
@@ -1102,7 +1099,7 @@ public class OptimizeFunctionalTests {
         //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
         final String edgeResponseData = "{\n" +
@@ -1212,7 +1209,7 @@ public class OptimizeFunctionalTests {
         //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-        MobileCore.updateConfiguration(configData);
+        updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
         final String edgeResponseData = "{\n" +
@@ -1495,5 +1492,21 @@ public class OptimizeFunctionalTests {
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         assertNotNull(decisioning);
         assertEquals("de03ac85-802a-4331-a905-a57053164d35", decisioning.get("propositionID"));
+    }
+
+    private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        MobileCore.updateConfiguration(config);
+        MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
+
+        assertTrue(latch.await(2, TimeUnit.SECONDS));
+    }
+
+    private void clearUpdatedConfiguration() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        MobileCore.clearUpdatedConfiguration();
+        MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
+
+        assertTrue(latch.await(2, TimeUnit.SECONDS));
     }
 }

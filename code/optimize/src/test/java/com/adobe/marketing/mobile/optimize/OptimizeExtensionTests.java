@@ -138,6 +138,16 @@ public class OptimizeExtensionTests {
     }
 
     @Test
+    public void testReadyForEvent_invalidConfigurationSet() {
+        // setup
+        setConfigurationSharedState(null);
+        final Event testEvent = new Event.Builder("Optimize Update Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                .build();
+
+        assertFalse(extension.readyForEvent(testEvent));
+    }
+
+    @Test
     public void testReadyForEvent_OptimizeResetContentEvent() {
         // setup
         final Event testEvent = new Event.Builder("Optimize Update Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestReset")
@@ -841,45 +851,6 @@ public class OptimizeExtensionTests {
         }
     }
 
-    @Test
-    public void testHandleEdgeResponse_nullEventData(){
-        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
-            // setup
-            final Event testEvent = new Event.Builder("AEP Response Event Handle", "com.adobe.eventType.edge", "personalization:decisions")
-                    .setEventData(null)
-                    .build();
-
-            // test
-            extension.handleEdgeResponse(testEvent);
-
-            // verify
-            logMockedStatic.verify(() -> Log.debug(anyString(), anyString(), anyString(), any()), times(1));
-
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
-            assertNotNull(cachedPropositions);
-            assertTrue(cachedPropositions.isEmpty());
-        }
-    }
-
-    @Test
-    public void testHandleEdgeResponse_emptyEventData() {
-        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
-            // setup
-            final Event testEvent = new Event.Builder("AEP Response Event Handle", "com.adobe.eventType.edge", "personalization:decisions")
-                    .setEventData(new HashMap<>())
-                    .build();
-
-            // test
-            extension.handleEdgeResponse(testEvent);
-
-            // verify
-            logMockedStatic.verify(() -> Log.debug(anyString(), anyString(), anyString(), any()), times(1));
-
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
-            assertNotNull(cachedPropositions);
-            assertTrue(cachedPropositions.isEmpty());
-        }
-    }
 
     @Test
     public void testHandleEdgeResponse_emptyProposition() throws Exception{
@@ -937,6 +908,46 @@ public class OptimizeExtensionTests {
 
             // verify
             logMockedStatic.verify(() -> Log.debug(anyString(), anyString(), anyString()), times(1));
+
+            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            assertNotNull(cachedPropositions);
+            assertTrue(cachedPropositions.isEmpty());
+        }
+    }
+
+    @Test
+    public void testHandleEdgeResponse_nullEventData(){
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // setup
+            final Event testEvent = new Event.Builder("AEP Response Event Handle", "com.adobe.eventType.edge", "personalization:decisions")
+                    .setEventData(null)
+                    .build();
+
+            // test
+            extension.handleEdgeResponse(testEvent);
+
+            // verify
+            logMockedStatic.verify(() -> Log.debug(anyString(), anyString(), anyString(), any()), times(1));
+
+            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            assertNotNull(cachedPropositions);
+            assertTrue(cachedPropositions.isEmpty());
+        }
+    }
+
+    @Test
+    public void testHandleEdgeResponse_emptyEventData() {
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // setup
+            final Event testEvent = new Event.Builder("AEP Response Event Handle", "com.adobe.eventType.edge", "personalization:decisions")
+                    .setEventData(new HashMap<>())
+                    .build();
+
+            // test
+            extension.handleEdgeResponse(testEvent);
+
+            // verify
+            logMockedStatic.verify(() -> Log.debug(anyString(), anyString(), anyString(), any()), times(1));
 
             final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
             assertNotNull(cachedPropositions);
@@ -1614,8 +1625,6 @@ public class OptimizeExtensionTests {
 
     // Helper methods
     private void setConfigurationSharedState(final Map<String, Object> data) {
-        Map<String, Object> configurationSharedState = new HashMap<>();
-        configurationSharedState.put(OptimizeConstants.Configuration.OPTIMIZE_OVERRIDE_DATASET_ID, "ffffffff-ffff-ffff-ffff-ffffffffffff");
         Mockito.when(mockExtensionApi.getSharedState(
                 eq(OptimizeConstants.Configuration.EXTENSION_NAME),
                 any(),

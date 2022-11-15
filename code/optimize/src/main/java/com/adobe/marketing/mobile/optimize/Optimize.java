@@ -71,8 +71,8 @@ public class Optimize {
      * @param data {@code Map<String, Object>} containing additional free-form data to be sent in the personalization query request.
      */
     public static void updatePropositions(@NonNull final List<DecisionScope> decisionScopes,
-                                          @NonNull final Map<String, Object> xdm,
-                                          @NonNull final Map<String, Object> data) {
+                                          final Map<String, Object> xdm,
+                                          final Map<String, Object> data) {
         if (OptimizeUtils.isNullOrEmpty(decisionScopes)) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of decision scopes is null or empty.");
             return;
@@ -206,7 +206,7 @@ public class Optimize {
      *
      * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are received from the Edge network.
      */
-    public static void onPropositionsUpdate(final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
+    public static void onPropositionsUpdate(@NonNull final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
         MobileCore.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.NOTIFICATION, new AdobeCallbackWithError<Event>() {
             @Override
             public void fail(final AdobeError error) {}

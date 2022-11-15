@@ -15,6 +15,7 @@ package com.adobe.marketing.mobile.optimize;
 public class OptimizeTestConstants {
 
     static final String EXTENSION_VERSION = "1.0.1";
+    public static final String LOG_TAG = "OptimizeTest";
 
     public final static class EventType {
         public static final String MONITOR = "com.adobe.functional.eventType.monitor";
@@ -35,9 +36,5 @@ public class OptimizeTestConstants {
         public static final String EDGE_ERROR_RESPONSE = "com.adobe.eventSource.errorResponseContent";
         public static final String RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
         public static final String REQUEST_RESET = "com.adobe.eventSource.requestReset";
-    }
-
-    public final static class EventDataKeys {
-        public static final String STATE_OWNER = "stateowner";
     }
 }
