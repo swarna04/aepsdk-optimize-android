@@ -83,6 +83,7 @@ task javadocInternal(type: Javadoc) {
 }
 
 task javadocPublic(type: Javadoc) {
+    failOnError false
     destinationDir = reporting.file("javadocPublic")
     options.memberLevel = JavadocMemberLevel.PUBLIC
 }
