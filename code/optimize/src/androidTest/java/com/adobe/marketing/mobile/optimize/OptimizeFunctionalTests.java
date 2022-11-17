@@ -12,13 +12,6 @@
 
 package com.adobe.marketing.mobile.optimize;
 
-import static com.adobe.marketing.mobile.TestHelper.resetTestExpectations;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
@@ -65,7 +58,7 @@ public class OptimizeFunctionalTests {
         MobileCore.start(o -> latch.countDown());
 
         latch.await();
-        resetTestExpectations();
+        TestHelper.resetTestExpectations();
     }
 
     //1
@@ -476,7 +469,7 @@ public class OptimizeFunctionalTests {
 
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(1, propositionMap.size());
         Proposition proposition = propositionMap.get(decisionScope);
         Assert.assertNotNull(proposition);
@@ -606,7 +599,7 @@ public class OptimizeFunctionalTests {
         final List<Event> optimizeResponseEventsList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.RESPONSE_CONTENT);
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(1, propositionMap.size());
 
         final Proposition proposition = propositionMap.get(decisionScope);
@@ -615,40 +608,40 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals("myMbox1", proposition.getScope());
 
         final Map<String, Object> scopeDetails = proposition.getScopeDetails();
-        assertEquals(5, scopeDetails.size());
-        assertEquals("TGT", scopeDetails.get("decisionProvider"));
+        Assert.assertEquals(5, scopeDetails.size());
+        Assert.assertEquals("TGT", scopeDetails.get("decisionProvider"));
         final Map<String, Object> activity = (Map<String, Object>)scopeDetails.get("activity");
-        assertNotNull(activity);
-        assertEquals(1, activity.size());
-        assertEquals("111111", activity.get("id"));
+        Assert.assertNotNull(activity);
+        Assert.assertEquals(1, activity.size());
+        Assert.assertEquals("111111", activity.get("id"));
         final Map<String, Object> experience = (Map<String, Object>)scopeDetails.get("experience");
-        assertNotNull(experience);
-        assertEquals(1, experience.size());
-        assertEquals("0", experience.get("id"));
+        Assert.assertNotNull(experience);
+        Assert.assertEquals(1, experience.size());
+        Assert.assertEquals("0", experience.get("id"));
         final List<Map<String, Object>> strategies = (List<Map<String, Object>>)scopeDetails.get("strategies");
-        assertNotNull(strategies);
-        assertEquals(2, strategies.size());
+        Assert.assertNotNull(strategies);
+        Assert.assertEquals(2, strategies.size());
         final Map<String, Object> strategy0 = strategies.get(0);
-        assertNotNull(strategy0);
-        assertEquals(3, strategy0.size());
-        assertEquals("entry", strategy0.get("step"));
-        assertEquals("0", strategy0.get("algorithmID"));
-        assertEquals("0", strategy0.get("trafficType"));
+        Assert.assertNotNull(strategy0);
+        Assert.assertEquals(3, strategy0.size());
+        Assert.assertEquals("entry", strategy0.get("step"));
+        Assert.assertEquals("0", strategy0.get("algorithmID"));
+        Assert.assertEquals("0", strategy0.get("trafficType"));
         final Map<String, Object> strategy1 = strategies.get(1);
-        assertNotNull(strategy1);
-        assertEquals(3, strategy1.size());
-        assertEquals("display", strategy1.get("step"));
-        assertEquals("0", strategy1.get("algorithmID"));
-        assertEquals("0", strategy1.get("trafficType"));
+        Assert.assertNotNull(strategy1);
+        Assert.assertEquals(3, strategy1.size());
+        Assert.assertEquals("display", strategy1.get("step"));
+        Assert.assertEquals("0", strategy1.get("algorithmID"));
+        Assert.assertEquals("0", strategy1.get("trafficType"));
         final Map <String, Object> characteristics = (Map<String, Object>)scopeDetails.get("characteristics");
-        assertNotNull(characteristics);
-        assertEquals(2, characteristics.size());
-        assertEquals("SGFZpwAqaqFTayhAT2xsgzG3+2fw4m+O9FK8c0QoOHfxVkH1ttT1PGBX3/jV8a5uFF0fAox6CXpjJ1PGRVQBjHl9Zc6mRxY9NQeM7rs/3Es1RHPkzBzyhpVS6eg9q+kw", characteristics.get("stateToken"));
+        Assert.assertNotNull(characteristics);
+        Assert.assertEquals(2, characteristics.size());
+        Assert.assertEquals("SGFZpwAqaqFTayhAT2xsgzG3+2fw4m+O9FK8c0QoOHfxVkH1ttT1PGBX3/jV8a5uFF0fAox6CXpjJ1PGRVQBjHl9Zc6mRxY9NQeM7rs/3Es1RHPkzBzyhpVS6eg9q+kw", characteristics.get("stateToken"));
         final Map<String, Object> eventTokens = (Map<String, Object>)characteristics.get("eventTokens");
-        assertNotNull(eventTokens);
-        assertEquals(2, eventTokens.size());
-        assertEquals("MmvRrL5aB4Jz36JappRYg2qipfsIHvVzTQxHolz2IpSCnQ9Y9OaLL2gsdrWQTvE54PwSz67rmXWmSnkXpSSS2Q==", eventTokens.get("display"));
-        assertEquals("EZDMbI2wmAyGcUYLr3VpmA==", eventTokens.get("click"));
+        Assert.assertNotNull(eventTokens);
+        Assert.assertEquals(2, eventTokens.size());
+        Assert.assertEquals("MmvRrL5aB4Jz36JappRYg2qipfsIHvVzTQxHolz2IpSCnQ9Y9OaLL2gsdrWQTvE54PwSz67rmXWmSnkXpSSS2Q==", eventTokens.get("display"));
+        Assert.assertEquals("EZDMbI2wmAyGcUYLr3VpmA==", eventTokens.get("click"));
 
         Assert.assertEquals(1, proposition.getOffers().size());
         final Offer offer = proposition.getOffers().get(0);
@@ -656,8 +649,8 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals("https://ns.adobe.com/personalization/json-content-item", offer.getSchema());
         Assert.assertEquals(OfferType.JSON, offer.getType());
         Assert.assertEquals("{\"device\":\"mobile\"}", offer.getContent());
-        assertNull(offer.getCharacteristics());
-        assertNull(offer.getLanguage());
+        Assert.assertNull(offer.getCharacteristics());
+        Assert.assertNull(offer.getLanguage());
     }
 
     //8
@@ -747,7 +740,7 @@ public class OptimizeFunctionalTests {
 
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(1, propositionMap.size());
 
         Assert.assertTrue(propositionMap.containsKey(decisionScope1));
@@ -856,7 +849,7 @@ public class OptimizeFunctionalTests {
 
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(0, propositionMap.size());
 
         Assert.assertFalse(propositionMap.containsKey(decisionScope1)); //Decision scope myMbox1 is not present in cache
@@ -896,7 +889,7 @@ public class OptimizeFunctionalTests {
 
         Assert.assertNotNull(optimizeResponseEventsList);
         Assert.assertEquals(1, optimizeResponseEventsList.size());
-        assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
         Assert.assertEquals(0, propositionMap.size());
 
         Assert.assertFalse(propositionMap.containsKey(decisionScope1));
@@ -1353,25 +1346,25 @@ public class OptimizeFunctionalTests {
         final Map<String, Object> propositionInteractionXdm = offer.generateDisplayInteractionXdm();
 
         //Assert
-        assertNotNull(propositionInteractionXdm);
-        assertEquals("decisioning.propositionDisplay", propositionInteractionXdm.get("eventType"));
+        Assert.assertNotNull(propositionInteractionXdm);
+        Assert.assertEquals("decisioning.propositionDisplay", propositionInteractionXdm.get("eventType"));
         final Map<String, Object> experience = (Map<String, Object>)propositionInteractionXdm.get("_experience");
-        assertNotNull(experience);
+        Assert.assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
-        assertNotNull(decisioning);
+        Assert.assertNotNull(decisioning);
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
-        assertNotNull(propositionInteractionDetailsList);
-        assertEquals(1, propositionInteractionDetailsList.size());
+        Assert.assertNotNull(propositionInteractionDetailsList);
+        Assert.assertEquals(1, propositionInteractionDetailsList.size());
         final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
-        assertEquals("de03ac85-802a-4331-a905-a57053164d35", propositionInteractionDetailsMap.get("id"));
-        assertEquals("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionInteractionDetailsMap.get("scope"));
+        Assert.assertEquals("de03ac85-802a-4331-a905-a57053164d35", propositionInteractionDetailsMap.get("id"));
+        Assert.assertEquals("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", propositionInteractionDetailsMap.get("scope"));
         final Map<String, Object> scopeDetails = (Map<String, Object>)propositionInteractionDetailsMap.get("scopeDetails");
-        assertNotNull(scopeDetails);
-        assertTrue(scopeDetails.isEmpty());
+        Assert.assertNotNull(scopeDetails);
+        Assert.assertTrue(scopeDetails.isEmpty());
         final List<Map<String, Object>> items = (List<Map<String, Object>>)propositionInteractionDetailsMap.get("items");
-        assertNotNull(items);
-        assertEquals(1, items.size());
-        assertEquals("xcore:personalized-offer:1111111111111111", items.get(0).get("id"));
+        Assert.assertNotNull(items);
+        Assert.assertEquals(1, items.size());
+        Assert.assertEquals("xcore:personalized-offer:1111111111111111", items.get(0).get("id"));
     }
 
     //17
@@ -1422,25 +1415,25 @@ public class OptimizeFunctionalTests {
 
         //Assert
         // verify
-        assertNotNull(propositionTapInteractionXdm);
-        assertEquals("decisioning.propositionInteract", propositionTapInteractionXdm.get("eventType"));
+        Assert.assertNotNull(propositionTapInteractionXdm);
+        Assert.assertEquals("decisioning.propositionInteract", propositionTapInteractionXdm.get("eventType"));
         final Map<String, Object> experience = (Map<String, Object>)propositionTapInteractionXdm.get("_experience");
-        assertNotNull(experience);
+        Assert.assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
-        assertNotNull(decisioning);
+        Assert.assertNotNull(decisioning);
         final List<Map<String, Object>> propositionInteractionDetailsList = (List<Map<String, Object>>)decisioning.get("propositions");
-        assertNotNull(propositionInteractionDetailsList);
-        assertEquals(1, propositionInteractionDetailsList.size());
+        Assert.assertNotNull(propositionInteractionDetailsList);
+        Assert.assertEquals(1, propositionInteractionDetailsList.size());
         final Map<String, Object> propositionInteractionDetailsMap = propositionInteractionDetailsList.get(0);
-        assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionInteractionDetailsMap.get("id"));
-        assertEquals("myMbox", propositionInteractionDetailsMap.get("scope"));
+        Assert.assertEquals("AT:eyJhY3Rpdml0eUlkIjoiMTI1NTg5IiwiZXhwZXJpZW5jZUlkIjoiMCJ9", propositionInteractionDetailsMap.get("id"));
+        Assert.assertEquals("myMbox", propositionInteractionDetailsMap.get("scope"));
         final Map<String, Object> scopeDetails = (Map<String, Object>) propositionInteractionDetailsMap.get("scopeDetails");
-        assertNotNull(scopeDetails);
-        assertTrue(scopeDetails.size() > 0);
+        Assert.assertNotNull(scopeDetails);
+        Assert.assertTrue(scopeDetails.size() > 0);
         final List<Map<String, Object>> items = (List<Map<String, Object>>)propositionInteractionDetailsMap.get("items");
-        assertNotNull(items);
-        assertEquals(1, items.size());
-        assertEquals("246315", items.get(0).get("id"));
+        Assert.assertNotNull(items);
+        Assert.assertEquals(1, items.size());
+        Assert.assertEquals("246315", items.get(0).get("id"));
 
 
 
@@ -1485,12 +1478,12 @@ public class OptimizeFunctionalTests {
         final Map<String, Object> propositionReferenceXdm = proposition.generateReferenceXdm();
 
         // verify
-        assertNotNull(propositionReferenceXdm);
+        Assert.assertNotNull(propositionReferenceXdm);
         final Map<String, Object> experience = (Map<String, Object>)propositionReferenceXdm.get("_experience");
-        assertNotNull(experience);
+        Assert.assertNotNull(experience);
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
-        assertNotNull(decisioning);
-        assertEquals("de03ac85-802a-4331-a905-a57053164d35", decisioning.get("propositionID"));
+        Assert.assertNotNull(decisioning);
+        Assert.assertEquals("de03ac85-802a-4331-a905-a57053164d35", decisioning.get("propositionID"));
     }
 
     private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {
@@ -1498,7 +1491,7 @@ public class OptimizeFunctionalTests {
         MobileCore.updateConfiguration(config);
         MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
 
-        assertTrue(latch.await(2, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(2, TimeUnit.SECONDS));
     }
 
     private void clearUpdatedConfiguration() throws InterruptedException {
@@ -1506,6 +1499,6 @@ public class OptimizeFunctionalTests {
         MobileCore.clearUpdatedConfiguration();
         MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
 
-        assertTrue(latch.await(2, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(2, TimeUnit.SECONDS));
     }
 }

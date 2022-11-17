@@ -13,7 +13,6 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.MonitorExtension.EventSpec;
-import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.app.Instrumentation;
@@ -25,6 +24,7 @@ import com.adobe.marketing.mobile.optimize.ADBCountDownLatch;
 import com.adobe.marketing.mobile.optimize.OptimizeTestConstants;
 import com.adobe.marketing.mobile.services.Log;
 
+import org.junit.Assert;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -269,7 +269,7 @@ public class TestHelper {
 
         if (expectedEventLatch != null) {
             boolean awaitResult = expectedEventLatch.await(timeout, TimeUnit.MILLISECONDS);
-            assertTrue("Timed out waiting for event type " + eventSpec.type + " and source " + eventSpec.source, awaitResult);
+            Assert.assertTrue("Timed out waiting for event type " + eventSpec.type + " and source " + eventSpec.source, awaitResult);
         } else {
             sleep(WAIT_TIMEOUT_MS);
         }
@@ -315,7 +315,7 @@ public class TestHelper {
                     }
                 });
 
-        assertTrue("Timeout waiting for shared state " + stateOwner, latch.await(timeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue("Timeout waiting for shared state " + stateOwner, latch.await(timeout, TimeUnit.MILLISECONDS));
         return sharedState.isEmpty() ? null : sharedState;
     }
 

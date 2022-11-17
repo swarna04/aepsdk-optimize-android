@@ -161,7 +161,7 @@ public class Optimize {
                 .setEventData(eventData)
                 .build();
 
-        MobileCore.dispatchEventWithResponseCallback(event, OptimizeConstants.RESPONSE_CALLBACK_TIMEOUT,  new AdobeCallbackWithError<Event>() {
+        MobileCore.dispatchEventWithResponseCallback(event, OptimizeConstants.DEFAULT_RESPONSE_CALLBACK_TIMEOUT,  new AdobeCallbackWithError<Event>() {
             @Override
             public void fail(final AdobeError adobeError) {
                 failWithError(callback, adobeError);

@@ -401,7 +401,6 @@ public class Offer {
      * @param data {@code Map<String, Object>} containing offer data.
      * @return {@code Offer} object or null.
      */
-    @SuppressWarnings("checkstyle:nestedifdepth")
     static Offer fromEventData(final Map<String, Object> data) {
         if (OptimizeUtils.isNullOrEmpty(data)) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Offer object, provided data Map is empty or null.");
@@ -440,7 +439,7 @@ public class Offer {
                     final Object offerContent = offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_CONTENT);
                     if (offerContent instanceof String) {
                         content = (String) offerContent;
-                    } else if (offerContent != null) {
+                    } else {
                         final JSONObject offerContentJson = new JSONObject((Map<String, Object>)offerContent);
                         content = offerContentJson.toString();
                     }

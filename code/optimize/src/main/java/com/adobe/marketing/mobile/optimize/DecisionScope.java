@@ -79,7 +79,6 @@ public class DecisionScope {
      *
      * @return {@code boolean} indicating whether the scope is valid.
      */
-    @SuppressWarnings("checkstyle:nestedifdepth")
     boolean isValid() {
         if (OptimizeUtils.isNullOrEmpty(name)) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Invalid scope! Scope name is null or empty.");

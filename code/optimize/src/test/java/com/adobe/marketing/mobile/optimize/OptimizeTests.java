@@ -6,7 +6,7 @@
 
  Unless required by applicable law or agreed to in writing, software distributed under
  the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
- OF ANY KIND, either express or implied. See the License for the specific language
+ OF ArgumentMatchers.any KIND, either express or implied. See the License for the specific language
  governing permissions and limitations under the License.
  */
 
@@ -24,9 +24,11 @@ import com.adobe.marketing.mobile.services.Log;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.runner.RunWith;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -36,16 +38,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -63,7 +55,7 @@ public class OptimizeTests {
     public void test_extensionVersion() {
         // test
         final String extensionVersion = Optimize.extensionVersion();
-        assertEquals("extensionVersion API should return the correct version string.", "1.0.1",
+        Assert.assertEquals("extensionVersion API should return the correct version string.", "2.0.0",
                 extensionVersion);
     }
 
@@ -71,8 +63,8 @@ public class OptimizeTests {
     public void test_registerExtension() {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // setup
-            ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
-            ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
+            final ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
+            final ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
                     ExtensionErrorCallback.class
             );
             mobileCoreMockedStatic
@@ -82,19 +74,20 @@ public class OptimizeTests {
             Optimize.registerExtension();
 
             // verify: happy
-            assertNotNull(callbackCaptor.getValue());
-            assertEquals(OptimizeExtension.class, extensionClassCaptor.getValue());
+            Assert.assertNotNull(callbackCaptor.getValue());
+            Assert.assertEquals(OptimizeExtension.class, extensionClassCaptor.getValue());
             // verify: error callback was called
-            callbackCaptor.getValue().error(ExtensionError.UNEXPECTED_ERROR);
+            callbackCaptor.getValue().error(null);
         }
     }
 
     @Test
-    public void test_registerExtension_nullError() {
-        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+    public void test_registerExtension_extensionError() {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
+             MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
             // setup
-            ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
-            ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
+            final ArgumentCaptor<Class> extensionClassCaptor = ArgumentCaptor.forClass(Class.class);
+            final ArgumentCaptor<ExtensionErrorCallback> callbackCaptor = ArgumentCaptor.forClass(
                     ExtensionErrorCallback.class
             );
             mobileCoreMockedStatic
@@ -102,11 +95,13 @@ public class OptimizeTests {
                     .thenReturn(true);
             // test
             Optimize.registerExtension();
-            // verify: happy
-            assertNotNull(callbackCaptor.getValue());
-            assertEquals(OptimizeExtension.class, extensionClassCaptor.getValue());
 
-            callbackCaptor.getValue().error(null);
+            // verify: happy
+            Assert.assertNotNull(callbackCaptor.getValue());
+            Assert.assertEquals(OptimizeExtension.class, extensionClassCaptor.getValue());
+
+            callbackCaptor.getValue().error(ExtensionError.UNEXPECTED_ERROR);
+            logMockedStatic.verify(() -> Log.error(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.any()));
         }
     }
 
@@ -115,7 +110,7 @@ public class OptimizeTests {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
              MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
             // setup
-            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
                     .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
 
             // test
@@ -126,25 +121,25 @@ public class OptimizeTests {
 
             //verify
             final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
-            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()), times(1));
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
             final Event event = eventCaptor.getValue();
 
-            assertNotNull(event);
-            assertEquals("com.adobe.eventType.optimize", event.getType());
-            assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+            Assert.assertNotNull(event);
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
 
             final Map<String, Object> eventData = event.getEventData();
-            assertEquals("updatepropositions", eventData.get("requesttype"));
-            assertNull(eventData.get("xdm"));
-            assertNull(eventData.get("data"));
+            Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+            Assert.assertNull(eventData.get("xdm"));
+            Assert.assertNull(eventData.get("data"));
 
             final List<Map<String, Object>> scopesList = (List<Map<String, Object>>) eventData.get("decisionscopes");
-            assertEquals(1, scopesList.size());
+            Assert.assertEquals(1, scopesList.size());
 
             final Map<String, Object> scopeData = scopesList.get(0);
-            assertNotNull(scopeData);
-            assertEquals(1, scopeData.size());
-            assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData.get("name"));
+            Assert.assertNotNull(scopeData);
+            Assert.assertEquals(1, scopeData.size());
+            Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData.get("name"));
         }
     }
 
@@ -153,7 +148,7 @@ public class OptimizeTests {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
              MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
             // setup
-            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
                     .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
 
             // test
@@ -175,33 +170,33 @@ public class OptimizeTests {
 
             //verify
             final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
-            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()), times(1));
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
             final Event event = eventCaptor.getValue();
 
-            assertNotNull(event);
-            assertEquals("com.adobe.eventType.optimize", event.getType());
-            assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+            Assert.assertNotNull(event);
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
 
             final Map<String, Object> eventData = event.getEventData();
-            assertEquals("updatepropositions", eventData.get("requesttype"));
+            Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
 
             Map<String, Object> xdm = (Map<String, Object>) eventData.get("xdm");
-            assertNotNull(xdm);
-            assertEquals(1, xdm.size());
-            assertEquals("myXdmValue", xdm.get("myXdmKey"));
+            Assert.assertNotNull(xdm);
+            Assert.assertEquals(1, xdm.size());
+            Assert.assertEquals("myXdmValue", xdm.get("myXdmKey"));
 
             Map<String, Object> data = (Map<String, Object>) eventData.get("data");
-            assertNotNull(data);
-            assertEquals(1, data.size());
-            assertEquals("myValue", data.get("myKey"));
+            Assert.assertNotNull(data);
+            Assert.assertEquals(1, data.size());
+            Assert.assertEquals("myValue", data.get("myKey"));
 
             final List<Map<String, Object>> scopesList = (List<Map<String, Object>>) eventData.get("decisionscopes");
-            assertEquals(1, scopesList.size());
+            Assert.assertEquals(1, scopesList.size());
 
             final Map<String, Object> scopeData = scopesList.get(0);
-            assertNotNull(scopeData);
-            assertEquals(1, scopeData.size());
-            assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData.get("name"));
+            Assert.assertNotNull(scopeData);
+            Assert.assertEquals(1, scopeData.size());
+            Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData.get("name"));
         }
     }
 
@@ -210,7 +205,7 @@ public class OptimizeTests {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
              MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
             // setup
-            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
                     .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
 
             // test
@@ -222,42 +217,42 @@ public class OptimizeTests {
 
             //verify
             final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
-            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()), times(1));
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
             final Event event = eventCaptor.getValue();
 
-            assertNotNull(event);
-            assertEquals("com.adobe.eventType.optimize", event.getType());
-            assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+            Assert.assertNotNull(event);
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
 
             final Map<String, Object> eventData = event.getEventData();
-            assertEquals("updatepropositions", eventData.get("requesttype"));
-            assertNull(eventData.get("xdm"));
-            assertNull(eventData.get("data"));
+            Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+            Assert.assertNull(eventData.get("xdm"));
+            Assert.assertNull(eventData.get("data"));
 
             final List<Map<String, Object>> scopesList = (List<Map<String, Object>>) eventData.get("decisionscopes");
-            assertEquals(2, scopesList.size());
+            Assert.assertEquals(2, scopesList.size());
 
             final Map<String, Object> scopeData = scopesList.get(0);
-            assertNotNull(scopeData);
-            assertEquals(1, scopeData.size());
-            assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData.get("name"));
+            Assert.assertNotNull(scopeData);
+            Assert.assertEquals(1, scopeData.size());
+            Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData.get("name"));
 
             final Map<String, Object> scopeData2 = scopesList.get(1);
-            assertNotNull(scopeData2);
-            assertEquals(1, scopeData2.size());
-            assertEquals("myMbox", scopeData2.get("name"));
+            Assert.assertNotNull(scopeData2);
+            Assert.assertEquals(1, scopeData2.size());
+            Assert.assertEquals("myMbox", scopeData2.get("name"));
         }
     }
 
-   @Test
+    @Test
     public void testUpdatePropositions_emptyDecisionScopesList() {
-       try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
-           // test
-           Optimize.updatePropositions(new ArrayList<DecisionScope>(), null, null);
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // test
+            Optimize.updatePropositions(new ArrayList<DecisionScope>(), null, null);
 
-           //verify
-           logMockedStatic.verify(() -> Log.warning(anyString(), anyString(), anyString()), times(1));
-       }
+            //verify
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+        }
     }
 
     @Test
@@ -267,7 +262,7 @@ public class OptimizeTests {
             Optimize.updatePropositions(null, null, null);
 
             //verify
-            logMockedStatic.verify(() -> Log.warning(anyString(), anyString(), anyString()), times(1));
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
         }
     }
 
@@ -275,7 +270,7 @@ public class OptimizeTests {
     public void testUpdatePropositions_invalidDecisionScopeInList() {
         try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class);
              MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
-            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
                     .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
 
             // test
@@ -285,7 +280,7 @@ public class OptimizeTests {
             Optimize.updatePropositions(scopes, null, null);
 
             //verify
-            logMockedStatic.verify(() -> Log.warning(anyString(), anyString(), anyString()), times(1));
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
         }
     }
 
@@ -294,7 +289,7 @@ public class OptimizeTests {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
              MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
             // setup
-            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
                     .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
 
             // test
@@ -316,29 +311,29 @@ public class OptimizeTests {
             // verify
             final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
             final ArgumentCaptor<AdobeCallbackWithError<Event>> callbackCaptor = ArgumentCaptor.forClass(AdobeCallbackWithError.class);
-            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEventWithResponseCallback(eventCaptor.capture(), anyLong(), callbackCaptor.capture()), times(1));
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEventWithResponseCallback(eventCaptor.capture(), ArgumentMatchers.anyLong(), callbackCaptor.capture()));
             final Event event = eventCaptor.getValue();
             final AdobeCallbackWithError<Event> callbackWithError = callbackCaptor.getValue();
 
             // verify dispatched event
-            assertNotNull(event);
-            assertEquals("com.adobe.eventType.optimize", event.getType());
-            assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+            Assert.assertNotNull(event);
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
             final Map<String, Object> eventData = event.getEventData();
-            assertEquals("getpropositions", eventData.get("requesttype"));
+            Assert.assertEquals("getpropositions", eventData.get("requesttype"));
 
             final List<Map<String, Object>> scopesList = (List<Map<String, Object>>) eventData.get("decisionscopes");
-            assertEquals(1, scopesList.size());
+            Assert.assertEquals(1, scopesList.size());
 
             final Map<String, Object> scopeData1 = scopesList.get(0);
-            assertNotNull(scopeData1);
-            assertEquals(1, scopeData1.size());
-            assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData1.get("name"));
+            Assert.assertNotNull(scopeData1);
+            Assert.assertEquals(1, scopeData1.size());
+            Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData1.get("name"));
 
             // verify callback response
             final Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
             final Proposition proposition = Proposition.fromEventData(propositionData);
-            assertNotNull(proposition);
+            Assert.assertNotNull(proposition);
 
             final List<Map<String, Object>> propositionsList = new ArrayList<>();
             propositionsList.add(proposition.toEventData());
@@ -349,11 +344,11 @@ public class OptimizeTests {
                     .setEventData(responseEventData).build();
             callbackWithError.call(responseEvent);
 
-            assertNull(responseError);
-            assertNotNull(responseMap);
-            assertEquals(1, responseMap.size());
+            Assert.assertNull(responseError);
+            Assert.assertNotNull(responseMap);
+            Assert.assertEquals(1, responseMap.size());
             Proposition actualProposition = responseMap.get(new DecisionScope("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ=="));
-            assertEquals(proposition, actualProposition);
+            Assert.assertEquals(proposition, actualProposition);
         }
     }
 
@@ -362,7 +357,7 @@ public class OptimizeTests {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
              MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
             // setup
-            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
                     .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
 
             // test
@@ -384,27 +379,27 @@ public class OptimizeTests {
 
             // verify
             final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
-            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEventWithResponseCallback(eventCaptor.capture(), anyLong(), any(AdobeCallbackWithError.class)), times(1));
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEventWithResponseCallback(eventCaptor.capture(), ArgumentMatchers.anyLong(), ArgumentMatchers.any(AdobeCallbackWithError.class)));
             final Event event = eventCaptor.getValue();
-            assertNotNull(event);
+            Assert.assertNotNull(event);
 
-            assertEquals("com.adobe.eventType.optimize", event.getType());
-            assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
             final Map<String, Object> eventData = event.getEventData();
-            assertEquals("getpropositions", eventData.get("requesttype"));
+            Assert.assertEquals("getpropositions", eventData.get("requesttype"));
 
             final List<Map<String, Object>> scopesList = (List<Map<String, Object>>) eventData.get("decisionscopes");
-            assertEquals(2, scopesList.size());
+            Assert.assertEquals(2, scopesList.size());
 
             final Map<String, Object> scopeData1 = scopesList.get(0);
-            assertNotNull(scopeData1);
-            assertEquals(1, scopeData1.size());
-            assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData1.get("name"));
+            Assert.assertNotNull(scopeData1);
+            Assert.assertEquals(1, scopeData1.size());
+            Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", scopeData1.get("name"));
 
             final Map<String, Object> scopeData2 = scopesList.get(1);
-            assertNotNull(scopeData2);
-            assertEquals(1, scopeData2.size());
-            assertEquals("myMbox", scopeData2.get("name"));
+            Assert.assertNotNull(scopeData2);
+            Assert.assertEquals(1, scopeData2.size());
+            Assert.assertEquals("myMbox", scopeData2.get("name"));
         }
     }
 
@@ -412,7 +407,7 @@ public class OptimizeTests {
     public void testGetPropositions_invalidDecisionScopeInList() {
         try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class);
              MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
-            base64MockedStatic.when(() -> Base64.decode(anyString(), anyInt()))
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
                     .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
 
             // test
@@ -432,8 +427,8 @@ public class OptimizeTests {
             });
 
             // verify
-            logMockedStatic.verify(() -> Log.warning(anyString(), anyString(), anyString()), times(1));
-            assertEquals(AdobeError.UNEXPECTED_ERROR, responseError);
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+            Assert.assertEquals(AdobeError.UNEXPECTED_ERROR, responseError);
         }
     }
 
@@ -454,8 +449,8 @@ public class OptimizeTests {
             });
 
             // verify
-            logMockedStatic.verify(() -> Log.warning(anyString(), anyString(), anyString()), times(1));
-            assertEquals(AdobeError.UNEXPECTED_ERROR, responseError);
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+            Assert.assertEquals(AdobeError.UNEXPECTED_ERROR, responseError);
         }
     }
 
@@ -476,8 +471,8 @@ public class OptimizeTests {
             });
 
             // verify
-            logMockedStatic.verify(() -> Log.warning(anyString(), anyString(), anyString()), times(1));
-            assertEquals(AdobeError.UNEXPECTED_ERROR, responseError);
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+            Assert.assertEquals(AdobeError.UNEXPECTED_ERROR, responseError);
         }
     }
 
@@ -499,13 +494,13 @@ public class OptimizeTests {
 
             //verify
             final ArgumentCaptor<AdobeCallbackWithError<Event>> callbackCaptor = ArgumentCaptor.forClass(AdobeCallbackWithError.class);
-            mobileCoreMockedStatic.verify(() -> MobileCore.registerEventListener(eq("com.adobe.eventType.optimize"), eq("com.adobe.eventSource.notification"),
-                    callbackCaptor.capture()), times(1));
+            mobileCoreMockedStatic.verify(() -> MobileCore.registerEventListener(ArgumentMatchers.eq("com.adobe.eventType.optimize"), ArgumentMatchers.eq("com.adobe.eventSource.notification"),
+                    callbackCaptor.capture()));
             final AdobeCallbackWithError<Event> callbackWithError = callbackCaptor.getValue();
 
             final Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
             final Proposition proposition = Proposition.fromEventData(propositionData);
-            assertNotNull(proposition);
+            Assert.assertNotNull(proposition);
 
             final List<Map<String, Object>> propositionsList = new ArrayList<>();
             propositionsList.add(proposition.toEventData());
@@ -516,11 +511,11 @@ public class OptimizeTests {
                     .setEventData(eventData).build();
             callbackWithError.call(event);
 
-            assertNull(responseError);
-            assertNotNull(responseMap);
-            assertEquals(1, responseMap.size());
+            Assert.assertNull(responseError);
+            Assert.assertNotNull(responseMap);
+            Assert.assertEquals(1, responseMap.size());
             Proposition actualProposition = responseMap.get(new DecisionScope("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ=="));
-            assertEquals(proposition, actualProposition);
+            Assert.assertEquals(proposition, actualProposition);
         }
     }
 
@@ -542,8 +537,8 @@ public class OptimizeTests {
 
             //verify
             final ArgumentCaptor<AdobeCallbackWithError<Event>> callbackCaptor = ArgumentCaptor.forClass(AdobeCallbackWithError.class);
-            mobileCoreMockedStatic.verify(() -> MobileCore.registerEventListener(eq("com.adobe.eventType.optimize"), eq("com.adobe.eventSource.notification"),
-                    callbackCaptor.capture()), times(1));
+            mobileCoreMockedStatic.verify(() -> MobileCore.registerEventListener(ArgumentMatchers.eq("com.adobe.eventType.optimize"), ArgumentMatchers.eq("com.adobe.eventSource.notification"),
+                    callbackCaptor.capture()));
             final AdobeCallbackWithError<Event> callbackWithError = callbackCaptor.getValue();
 
             final List<Map<String, Object>> propositionsList = new ArrayList<>();
@@ -555,8 +550,8 @@ public class OptimizeTests {
                     .setEventData(eventData).build();
             callbackWithError.call(event);
 
-            assertNull(responseError);
-            assertNull(responseMap);
+            Assert.assertNull(responseError);
+            Assert.assertNull(responseMap);
         }
     }
 
@@ -578,8 +573,8 @@ public class OptimizeTests {
 
             //verify
             final ArgumentCaptor<AdobeCallbackWithError<Event>> callbackCaptor = ArgumentCaptor.forClass(AdobeCallbackWithError.class);
-            mobileCoreMockedStatic.verify(() -> MobileCore.registerEventListener(eq("com.adobe.eventType.optimize"), eq("com.adobe.eventSource.notification"),
-                    callbackCaptor.capture()), times(1));
+            mobileCoreMockedStatic.verify(() -> MobileCore.registerEventListener(ArgumentMatchers.eq("com.adobe.eventType.optimize"), ArgumentMatchers.eq("com.adobe.eventSource.notification"),
+                    callbackCaptor.capture()));
             final AdobeCallbackWithError<Event> callbackWithError = callbackCaptor.getValue();
 
             final List<Map<String, Object>> propositionsList = new ArrayList<>();
@@ -591,8 +586,8 @@ public class OptimizeTests {
                     .setEventData(eventData).build();
             callbackWithError.call(event);
 
-            assertNull(responseError);
-            assertNull(responseMap);
+            Assert.assertNull(responseError);
+            Assert.assertNull(responseMap);
         }
     }
 
@@ -604,13 +599,13 @@ public class OptimizeTests {
 
             //verify
             final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
-            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()), times(1));
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
             final Event event = eventCaptor.getValue();
 
-            assertNotNull(event);
-            assertEquals("com.adobe.eventType.optimize", event.getType());
-            assertEquals("com.adobe.eventSource.requestReset", event.getSource());
-            assertNull(event.getEventData());
+            Assert.assertNotNull(event);
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestReset", event.getSource());
+            Assert.assertNull(event.getEventData());
         }
     }
 }
