@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Public class containing APIs for the Optimize extension.
@@ -71,8 +72,8 @@ public class Optimize {
      * @param data {@code Map<String, Object>} containing additional free-form data to be sent in the personalization query request.
      */
     public static void updatePropositions(@NonNull final List<DecisionScope> decisionScopes,
-                                          final Map<String, Object> xdm,
-                                          final Map<String, Object> data) {
+                                          @Nullable final Map<String, Object> xdm,
+                                          @Nullable final Map<String, Object> data) {
         if (OptimizeUtils.isNullOrEmpty(decisionScopes)) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of decision scopes is null or empty.");
             return;
@@ -119,13 +120,12 @@ public class Optimize {
 
     /**
      * This API retrieves the previously fetched propositions, for the provided decision scopes, from the in-memory extension propositions cache.
-     * <p>
      *
      * @param decisionScopes {@code List<DecisionScope>} containing scopes for which offers need to be requested.
      * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are retrieved from the local cache.
      */
     public static void getPropositions(@NonNull final List<DecisionScope> decisionScopes,
-                                       final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
+                                       @NonNull final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
         if (OptimizeUtils.isNullOrEmpty(decisionScopes)) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided list of decision scopes is null or empty.");
             failWithError(callback, AdobeError.UNEXPECTED_ERROR);

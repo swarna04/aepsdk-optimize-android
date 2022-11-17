@@ -89,11 +89,11 @@ class OptimizeExtension extends Extension {
     }
 
     @Override
-    public boolean readyForEvent(final @NonNull Event event) {
+    public boolean readyForEvent(@NonNull final Event event) {
         if (OptimizeConstants.EventType.OPTIMIZE.equalsIgnoreCase(event.getType())
                 && OptimizeConstants.EventSource.REQUEST_CONTENT.equalsIgnoreCase(event.getSource())) {
             SharedStateResult configurationSharedState = getApi().getSharedState(OptimizeConstants.Configuration.EXTENSION_NAME, event, false, SharedStateResolution.ANY);
-            return configurationSharedState != null && configurationSharedState.getStatus() == SharedStateStatus.SET && configurationSharedState.getValue() != null;
+            return configurationSharedState != null && configurationSharedState.getValue() != null;
         }
         return true;
     }
@@ -127,7 +127,7 @@ class OptimizeExtension extends Extension {
      * @param event incoming {@link Event} object to be processed.
      */
     void handleOptimizeRequestContent(final Event event) {
-        if (event == null || event.getEventData() == null || event.getEventData().isEmpty()) {
+        if (event == null || OptimizeUtils.isNullOrEmpty(event.getEventData())) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleOptimizeRequestContent - Ignoring the Optimize request event, either event is null or event data is null/ empty.");
             return;
@@ -244,7 +244,7 @@ class OptimizeExtension extends Extension {
      * @param event incoming {@link Event} object to be processed.
      */
     void handleEdgeResponse(final Event event) {
-        if (event == null || event.getEventData() == null || event.getEventData().isEmpty()) {
+        if (event == null || OptimizeUtils.isNullOrEmpty(event.getEventData())) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleEdgeResponse - Ignoring the Edge personalization:decisions event, either event is null or event data is null/ empty.");
             return;
@@ -264,7 +264,7 @@ class OptimizeExtension extends Extension {
             // todo
             final List<Map<String, Object>> payload = (List<Map<String, Object>>) eventData.get(OptimizeConstants.Edge.PAYLOAD);
             if (OptimizeUtils.isNullOrEmpty(payload)) {
-                Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "handleEdgeResponse - Cannot process the Edge personalization:decisions event, no propositions with valid offers are present in the Edge response.");
+                Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "handleEdgeResponse - Cannot process the Edge personalization:decisions event, propositions list is either null or empty in the Edge response.");
                 return;
             }
 
@@ -314,7 +314,7 @@ class OptimizeExtension extends Extension {
      * @param event incoming {@link Event} object to be processed.
      */
     void handleEdgeErrorResponse(final Event event) {
-        if (event == null || event.getEventData() == null || event.getEventData().isEmpty()) {
+        if (event == null || OptimizeUtils.isNullOrEmpty(event.getEventData())) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleEdgeErrorResponse - Ignoring the Edge error response event, either event is null or event data is null/ empty.");
             return;
@@ -439,7 +439,7 @@ class OptimizeExtension extends Extension {
     void handleClearPropositions(final Event event) {
         if (event == null) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
-                    "handleClearPropositions - Cannot process generic identity reset request, event is null.");
+                    "handleClearPropositions - Cannot clear cached propositions, incoming event is null.");
             return;
         }
         cachedPropositions.clear();
@@ -486,7 +486,7 @@ class OptimizeExtension extends Extension {
         }
 
         if (validScopeNames.size() == 0) {
-            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "No valid decision scopes are retrieved, provided list of decision scopes has no valid scope.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidDecisionScopes - No valid decision scopes are retrieved, provided list of decision scopes has no valid scope.");
             return null;
         }
 
@@ -501,6 +501,7 @@ class OptimizeExtension extends Extension {
      */
     private Event createResponseEventWithError(final AdobeError error, final Event event) {
         final Map<String, Object> eventData = new HashMap<>();
+        // todo change once Core exposes methods to convert to event data
         eventData.put(OptimizeConstants.EventDataKeys.RESPONSE_ERROR, error.getErrorName());
 
         return new Event.Builder(OptimizeConstants.EventNames.OPTIMIZE_RESPONSE,
