@@ -13,6 +13,7 @@
 package com.adobe.marketing.mobile.optimize;
 
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
@@ -135,10 +136,9 @@ public class Proposition {
                 return null;
             }
 
-            final Map<String, Object> scopeDetails = (Map<String, Object>) data.get(OptimizeConstants.JsonKeys.PAYLOAD_SCOPEDETAILS);
+            final Map<String, Object> scopeDetails = DataReader.getTypedMap(Object.class, data, OptimizeConstants.JsonKeys.PAYLOAD_SCOPEDETAILS);
 
-            // todo
-            final List<Map<String, Object>> items = (List<Map<String, Object>>) data.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEMS);
+            final List<Map<String, Object>> items = DataReader.getTypedListOfMap(Object.class, data, OptimizeConstants.JsonKeys.PAYLOAD_ITEMS);
             List<Offer> offers = new ArrayList<>();
             if (items != null) {
                 for (Map<String, Object> item : items) {

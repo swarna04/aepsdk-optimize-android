@@ -1255,8 +1255,7 @@ public class OptimizeExtensionTests {
             final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) dispatchedEvent.getEventData().get("propositions");
             Assert.assertNull(propositionsList);
 
-            final String error = (String) dispatchedEvent.getEventData().get("responseerror");
-            Assert.assertEquals(AdobeError.UNEXPECTED_ERROR.getErrorName(), error);
+            Assert.assertTrue((Boolean) dispatchedEvent.getEventData().get("responseerror"));
         }
     }
 

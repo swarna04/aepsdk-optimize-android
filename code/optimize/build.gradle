@@ -70,10 +70,6 @@ android.libraryVariants.all { variant ->
         options {
             links "https://developer.android.com/reference"
         }
-        def currentJavaVersion = JavaVersion.current()
-        if (currentJavaVersion >= JavaVersion.VERSION_1_9) {
-            options.addStringOption("-release", "8");
-        }
     }
 }
 
@@ -212,7 +208,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.5.1'
 
     // todo change Adobe Mobile SDK Core
-    implementation 'com.github.adobe.aepsdk-core-android:core:dev-v2.0.0-SNAPSHOT'
+    implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-alpha.4'
 
     testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoCoreVersion}"

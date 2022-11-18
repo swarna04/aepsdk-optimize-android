@@ -12,7 +12,6 @@
 
 package com.adobe.marketing.mobile.optimize;
 
-import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
@@ -173,8 +172,7 @@ class OptimizeExtension extends Extension {
         }
 
         try {
-            // todo
-            final List<Map<String, Object>> decisionScopesData = (List<Map<String, Object>>) eventData.get(OptimizeConstants.EventDataKeys.DECISION_SCOPES);
+            final List<Map<String, Object>> decisionScopesData = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.DECISION_SCOPES);
             final List<String> validScopeNames = retrieveValidDecisionScopes(decisionScopesData);
             if (OptimizeUtils.isNullOrEmpty(validScopeNames)) {
                 Log.debug(OptimizeConstants.LOG_TAG,
@@ -261,8 +259,7 @@ class OptimizeExtension extends Extension {
                 return;
             }
 
-            // todo
-            final List<Map<String, Object>> payload = (List<Map<String, Object>>) eventData.get(OptimizeConstants.Edge.PAYLOAD);
+            final List<Map<String, Object>> payload = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.Edge.PAYLOAD);
             if (OptimizeUtils.isNullOrEmpty(payload)) {
                 Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "handleEdgeResponse - Cannot process the Edge personalization:decisions event, propositions list is either null or empty in the Edge response.");
                 return;
@@ -340,13 +337,12 @@ class OptimizeExtension extends Extension {
         final Map<String, Object> eventData = event.getEventData();
 
         try {
-            // todo
-            final List<Map<String, Object>> decisionScopesData = (List<Map<String, Object>>) eventData.get(OptimizeConstants.EventDataKeys.DECISION_SCOPES);
+            final List<Map<String, Object>> decisionScopesData = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.DECISION_SCOPES);
             final List<String> validScopeNames = retrieveValidDecisionScopes(decisionScopesData);
             if (OptimizeUtils.isNullOrEmpty(validScopeNames)) {
                 Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                         "handleGetPropositions - Cannot process the get propositions request event, provided list of decision scopes has no valid scope.");
-                getApi().dispatch(createResponseEventWithError(AdobeError.UNEXPECTED_ERROR, event));
+                getApi().dispatch(createResponseEventWithError(event));
                 return;
             }
 
@@ -499,10 +495,9 @@ class OptimizeExtension extends Extension {
      *
      * @return {@link Event} instance.
      */
-    private Event createResponseEventWithError(final AdobeError error, final Event event) {
+    private Event createResponseEventWithError(final Event event) {
         final Map<String, Object> eventData = new HashMap<>();
-        // todo change once Core exposes methods to convert to event data
-        eventData.put(OptimizeConstants.EventDataKeys.RESPONSE_ERROR, error.getErrorName());
+        eventData.put(OptimizeConstants.EventDataKeys.RESPONSE_ERROR, true);
 
         return new Event.Builder(OptimizeConstants.EventNames.OPTIMIZE_RESPONSE,
                 OptimizeConstants.EventType.OPTIMIZE,

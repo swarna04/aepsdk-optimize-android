@@ -19,6 +19,8 @@ import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.DataReaderException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -169,32 +171,35 @@ public class Optimize {
 
             @Override
             public void call(final Event event) {
-                final Map<String, Object> eventData = event.getEventData();
-                if (OptimizeUtils.isNullOrEmpty(eventData)) {
-                    failWithError(callback, AdobeError.UNEXPECTED_ERROR);
-                    return;
-                }
+                try {
+                    final Map<String, Object> eventData = event.getEventData();
+                    if (OptimizeUtils.isNullOrEmpty(eventData)) {
+                        failWithError(callback, AdobeError.UNEXPECTED_ERROR);
+                        return;
+                    }
 
-                if (eventData.containsKey(OptimizeConstants.EventDataKeys.RESPONSE_ERROR)) {
-                    final AdobeError error = (AdobeError) eventData.get(OptimizeConstants.EventDataKeys.RESPONSE_ERROR);
-                    failWithError(callback, error);
-                    return;
-                }
+                    if (eventData.containsKey(OptimizeConstants.EventDataKeys.RESPONSE_ERROR)
+                            && DataReader.getBoolean(eventData, OptimizeConstants.EventDataKeys.RESPONSE_ERROR)) {
+                        failWithError(callback, AdobeError.UNEXPECTED_ERROR);
+                        return;
+                    }
 
-                // todo
-                final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>)eventData.get(OptimizeConstants.EventDataKeys.PROPOSITIONS);
-
-                final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
-                if(propositionsList != null) {
-                    for (final Map<String, Object> propositionData : propositionsList) {
-                        final Proposition proposition = Proposition.fromEventData(propositionData);
-                        if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
-                            final DecisionScope scope = new DecisionScope(proposition.getScope());
-                            propositionsMap.put(scope, proposition);
+                    final List<Map<String, Object>> propositionsList;
+                    propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
+                    final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
+                    if (propositionsList != null) {
+                        for (final Map<String, Object> propositionData : propositionsList) {
+                            final Proposition proposition = Proposition.fromEventData(propositionData);
+                            if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
+                                final DecisionScope scope = new DecisionScope(proposition.getScope());
+                                propositionsMap.put(scope, proposition);
+                            }
                         }
                     }
+                    callback.call(propositionsMap);
+                } catch (DataReaderException e) {
+                    failWithError(callback, AdobeError.UNEXPECTED_ERROR);
                 }
-                callback.call(propositionsMap);
             }
         });
     }
@@ -218,23 +223,25 @@ public class Optimize {
                     return;
                 }
 
-                // todo
-                final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>)eventData.get(OptimizeConstants.EventDataKeys.PROPOSITIONS);
+                final List<Map<String, Object>> propositionsList;
+                try {
+                    propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
 
-                final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
-                if(propositionsList != null) {
-                    for (final Map<String, Object> propositionData : propositionsList) {
-                        final Proposition proposition = Proposition.fromEventData(propositionData);
-                        if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
-                            final DecisionScope scope = new DecisionScope(proposition.getScope());
-                            propositionsMap.put(scope, proposition);
+                    final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
+                    if(propositionsList != null) {
+                        for (final Map<String, Object> propositionData : propositionsList) {
+                            final Proposition proposition = Proposition.fromEventData(propositionData);
+                            if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
+                                final DecisionScope scope = new DecisionScope(proposition.getScope());
+                                propositionsMap.put(scope, proposition);
+                            }
                         }
                     }
-                }
 
-                if (!propositionsMap.isEmpty()) {
-                    callback.call(propositionsMap);
-                }
+                    if (!propositionsMap.isEmpty()) {
+                        callback.call(propositionsMap);
+                    }
+                } catch (DataReaderException ignored) {}
             }
         });
     }
