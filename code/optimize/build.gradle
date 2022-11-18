@@ -70,6 +70,10 @@ android.libraryVariants.all { variant ->
         options {
             links "https://developer.android.com/reference"
         }
+        def currentJavaVersion = JavaVersion.current()
+        if (currentJavaVersion >= JavaVersion.VERSION_1_9) {
+            options.addStringOption("-release", "8");
+        }
     }
 }
 
