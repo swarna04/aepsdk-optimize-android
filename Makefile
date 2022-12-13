@@ -17,6 +17,9 @@ clean:
 	(rm -rf ci)
 	(rm -rf $(AAR_FILE_DIR))
 	(./code/gradlew -p code clean)
+	
+checkstyle:
+	(./code/gradlew -p code/optimize checkstyle)
 
 ci-build: create-ci
 	(mkdir -p ci/assemble)
@@ -38,7 +41,7 @@ ci-functional-test: create-ci
 
 ci-javadoc: create-ci
 	(mkdir -p ci/javadoc)
-	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) javadocPublic > ci/javadocPublic.log 2>&1)
+	(./code/gradlew -p code/$(EXTENSION-LIBRARY-FOLDER-NAME) javadocPublic)
 	(cp -r ./code/$(EXTENSION-LIBRARY-FOLDER-NAME)/build ./ci/javadoc)
 
 ci-generate-library-debug:

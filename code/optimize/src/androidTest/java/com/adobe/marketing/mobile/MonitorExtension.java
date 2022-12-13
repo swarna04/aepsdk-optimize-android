@@ -12,8 +12,12 @@
 
 package com.adobe.marketing.mobile;
 
+import androidx.annotation.NonNull;
+
 import com.adobe.marketing.mobile.optimize.ADBCountDownLatch;
 import com.adobe.marketing.mobile.optimize.OptimizeTestConstants;
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,23 +32,13 @@ import java.util.Objects;
 
 class MonitorExtension extends Extension {
 
-    private static final String LOG_TAG = "MonitorExtension";
+    private static final String SELF_TAG = "MonitorExtension";
 
     private static final Map<EventSpec, List<Event>> receivedEvents = new HashMap<>();
     private static final Map<EventSpec, ADBCountDownLatch> expectedEvents = new HashMap<>();
 
     protected MonitorExtension(final ExtensionApi extensionApi) {
         super(extensionApi);
-
-        extensionApi.registerWildcardListener(
-                MonitorListener.class, new ExtensionErrorCallback<ExtensionError>() {
-                    @Override
-                    public void error(final ExtensionError extensionError) {
-                        MobileCore.log(LoggingMode.ERROR, LOG_TAG,
-                                "There was an error registering Extension Listener: " +
-                                        extensionError.getErrorName());
-                    }
-                });
     }
 
     @Override
@@ -53,28 +47,18 @@ class MonitorExtension extends Extension {
     }
 
     public static void registerExtension() {
-        MobileCore.registerExtension(MonitorExtension.class, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(final ExtensionError extensionError) {
-                MobileCore.log(LoggingMode.ERROR, LOG_TAG,
-                        "There was an error registering the Monitor extension: " + extensionError.getErrorName());
+        MobileCore.registerExtension(MonitorExtension.class, extensionError -> {
+            if (extensionError == null) {
+                return;
             }
+            Log.error(OptimizeTestConstants.LOG_TAG, SELF_TAG,
+                    "An error occurred while registering the Optimize extension: %s ", extensionError.getErrorName());
         });
     }
 
-    /**
-     * Unregister the Monitor Extension from the EventHub.
-     */
-    public static void unregisterExtension() {
-        Event event = new Event.Builder("Unregister Monitor Extension Request", OptimizeTestConstants.EventType.MONITOR,
-                OptimizeTestConstants.EventSource.UNREGISTER)
-                .build();
-        MobileCore.dispatchEvent(event, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(final ExtensionError extensionError) {
-                MobileCore.log(LoggingMode.ERROR, LOG_TAG, "Failed to unregister Monitor extension.");
-            }
-        });
+    @Override
+    protected void onRegistered() {
+        getApi().registerEventListener(EventType.WILDCARD, EventSource.WILDCARD, this::wildcardProcessor);
     }
 
     /**
@@ -100,7 +84,7 @@ class MonitorExtension extends Extension {
      * Resets the map of received and expected events.
      */
     public static void reset() {
-        MobileCore.log(LoggingMode.VERBOSE, LOG_TAG, "Reset expected and received events.");
+        Log.trace(OptimizeTestConstants.LOG_TAG, SELF_TAG, "Reset expected and received events.");
         receivedEvents.clear();
         expectedEvents.clear();
     }
@@ -112,7 +96,7 @@ class MonitorExtension extends Extension {
      * All other events are added to the map of received events. If the event is in the map
      * of expected events, its latch is counted down.
      *
-     * @param event
+     * @param event incoming {@link Event} object to be processed.
      */
     public void wildcardProcessor(final Event event) {
         if (OptimizeTestConstants.EventType.MONITOR.equalsIgnoreCase(event.getType())) {
@@ -129,10 +113,10 @@ class MonitorExtension extends Extension {
 
         EventSpec eventSpec = new EventSpec(event.getSource(), event.getType());
 
-        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Received and processing event " + eventSpec);
+        Log.debug(OptimizeTestConstants.LOG_TAG, SELF_TAG, "Received and processing event " + eventSpec);
 
         if (!receivedEvents.containsKey(eventSpec)) {
-            receivedEvents.put(eventSpec, new ArrayList<Event>());
+            receivedEvents.put(eventSpec, new ArrayList<>());
         }
 
         receivedEvents.get(eventSpec).add(event);
@@ -145,93 +129,69 @@ class MonitorExtension extends Extension {
 
     /**
      * Processor which unregisters this extension.
-     * @param event
+     * @param event event incoming {@link Event} object to be processed.
      */
     private void processUnregisterRequest(final Event event) {
-        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Unregistering the Monitor Extension.");
+        Log.debug(OptimizeTestConstants.LOG_TAG, SELF_TAG, "Unregistering the Monitor Extension.");
         getApi().unregisterExtension();
     }
 
     /**
      * Processor which retrieves and dispatches the XDM shared state for the state owner specified
      * in the request.
-     * @param event
+     * @param event event incoming {@link Event} object to be processed.
      */
     private void processXDMSharedStateRequest(final Event event) {
-        EventData eventData = event.getData();
+        Map<String, Object> eventData = event.getEventData();
 
         if (eventData == null) {
             return;
         }
 
-        String stateOwner = eventData.optString(OptimizeTestConstants.EventDataKeys.STATE_OWNER, null);
+        String stateOwner = DataReader.optString(eventData, OptimizeTestConstants.EventDataKeys.STATE_OWNER, null);
 
         if (stateOwner == null) {
             return;
         }
 
-        EventData sharedState = getApi().getXDMSharedEventState(stateOwner, event);
+        SharedStateResult sharedState = getApi().getXDMSharedState(stateOwner, event, false, SharedStateResolution.LAST_SET);
 
-        Event responseEvent = new Event.Builder("Get XDM Shared State Response", OptimizeTestConstants.EventType.MONITOR,
-                OptimizeTestConstants.EventSource.XDM_SHARED_STATE_RESPONSE)
-                .setEventData(sharedState == null ? null : sharedState.toObjectMap())
-                .setPairID(event.getResponsePairID())
+        Event responseEvent = new Event.Builder("Get Shared State Response", OptimizeTestConstants.EventType.MONITOR,
+                OptimizeTestConstants.EventSource.SHARED_STATE_RESPONSE)
+                .setEventData(sharedState == null ? null : sharedState.getValue())
+                .inResponseToEvent(event)
                 .build();
 
-        MobileCore.dispatchResponseEvent(responseEvent, event, null);
+        MobileCore.dispatchEvent(responseEvent);
     }
 
     /**
      * Processor which retrieves and dispatches the shared state for the state owner specified
      * in the request.
-     * @param event
+     * @param event event incoming {@link Event} object to be processed.
      */
     private void processSharedStateRequest(final Event event) {
-        EventData eventData = event.getData();
+        Map<String, Object> eventData = event.getEventData();
 
         if (eventData == null) {
             return;
         }
 
-        String stateOwner = eventData.optString(OptimizeTestConstants.EventDataKeys.STATE_OWNER, null);
+        String stateOwner = DataReader.optString(eventData, OptimizeTestConstants.EventDataKeys.STATE_OWNER, null);
 
         if (stateOwner == null) {
             return;
         }
 
-        EventData sharedState = getApi().getSharedEventState(stateOwner, event);
+        SharedStateResult sharedState = getApi().getSharedState(stateOwner, event, false, SharedStateResolution.LAST_SET);
 
         Event responseEvent = new Event.Builder("Get Shared State Response", OptimizeTestConstants.EventType.MONITOR,
                 OptimizeTestConstants.EventSource.SHARED_STATE_RESPONSE)
-                .setEventData(sharedState == null ? null : sharedState.toObjectMap())
-                .setPairID(event.getResponsePairID())
+                .setEventData(sharedState == null ? null : sharedState.getValue())
+                .inResponseToEvent(event)
                 .build();
 
-        MobileCore.dispatchResponseEvent(responseEvent, event, null);
-    }
-
-    /**
-     * Listener class
-     */
-    public static class MonitorListener extends ExtensionListener {
-
-        protected MonitorListener(final ExtensionApi extension,final String type,final String source) {
-            super(extension, type, source);
-        }
-
-        @Override
-        public void hear(final Event event) {
-            MonitorExtension extension = getParentExtension();
-
-            if (extension != null) {
-                extension.wildcardProcessor(event);
-            }
-        }
-
-        @Override
-        protected MonitorExtension getParentExtension() {
-            return (MonitorExtension) super.getParentExtension();
-        }
+        MobileCore.dispatchEvent(responseEvent);
     }
 
     /**
@@ -255,6 +215,7 @@ class MonitorExtension extends Extension {
             this.type = type.toLowerCase();
         }
 
+        @NonNull
         @Override
         public String toString() {
             return "type '" + type + "' and source '" + source + "'";

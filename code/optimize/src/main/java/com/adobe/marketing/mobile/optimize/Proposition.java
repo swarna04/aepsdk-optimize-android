@@ -12,8 +12,8 @@
 
 package com.adobe.marketing.mobile.optimize;
 
-import com.adobe.marketing.mobile.LoggingMode;
-import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
@@ -22,9 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.adobe.marketing.mobile.optimize.OptimizeConstants.LOG_TAG;
-
 public class Proposition {
+
+    private static final String SELF_TAG = "Proposition";
+
     final private String id;
     final private List<Offer> offers;
     final private String scope;
@@ -41,9 +42,9 @@ public class Proposition {
     Proposition(final String id, final List<Offer> offers, final String scope, final Map<String, Object> scopeDetails) {
         this.id = id != null ? id : "";
         this.scope = scope != null ? scope : "";
-        this.scopeDetails = scopeDetails != null ? scopeDetails : new HashMap<String, Object>();
+        this.scopeDetails = scopeDetails != null ? scopeDetails : new HashMap<>();
 
-        this.offers = offers != null ? offers : new ArrayList<Offer>();
+        this.offers = offers != null ? offers : new ArrayList<>();
         // Setting a soft reference to Proposition in each Offer
         for (final Offer o: this.offers) {
             if (o.propositionReference == null) {
@@ -118,37 +119,40 @@ public class Proposition {
      */
     public static Proposition fromEventData(final Map<String, Object> data) {
         if (OptimizeUtils.isNullOrEmpty(data)) {
-            MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Proposition object, provided data Map is empty or null.");
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Proposition object, provided data Map is empty or null.");
             return null;
         }
 
         try {
             final String id = (String) data.get(OptimizeConstants.JsonKeys.PAYLOAD_ID);
             if (OptimizeUtils.isNullOrEmpty(id)) {
-                MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Proposition object, provided data does not contain proposition identifier.");
+                Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Proposition object, provided data does not contain proposition identifier.");
                 return null;
             }
 
             final String scope = (String) data.get(OptimizeConstants.JsonKeys.PAYLOAD_SCOPE);
             if (OptimizeUtils.isNullOrEmpty(scope)) {
-                MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Proposition object, provided data does not contain proposition scope.");
+                Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Proposition object, provided data does not contain proposition scope.");
                 return null;
             }
 
-            final Map<String, Object> scopeDetails = (Map<String, Object>) data.get(OptimizeConstants.JsonKeys.PAYLOAD_SCOPEDETAILS);
+            final Map<String, Object> scopeDetails = DataReader.getTypedMap(Object.class, data, OptimizeConstants.JsonKeys.PAYLOAD_SCOPEDETAILS);
 
-            final List<Map<String, Object>> items = (List<Map<String, Object>>) data.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEMS);
+            final List<Map<String, Object>> items = DataReader.getTypedListOfMap(Object.class, data, OptimizeConstants.JsonKeys.PAYLOAD_ITEMS);
             List<Offer> offers = new ArrayList<>();
-            for (Map<String, Object> item : items) {
-                final Offer offer = Offer.fromEventData(item);
-                if (offer != null) {
-                    offers.add(offer);
+            if (items != null) {
+                for (Map<String, Object> item : items) {
+                    final Offer offer = Offer.fromEventData(item);
+                    if (offer != null) {
+                        offers.add(offer);
+                    }
                 }
             }
+
             return new Proposition(id, offers, scope, scopeDetails);
 
         } catch (Exception e) {
-            MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Cannot create Proposition object, provided data contains invalid fields.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Proposition object, provided data contains invalid fields.");
             return null;
         }
     }
@@ -173,7 +177,7 @@ public class Proposition {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
