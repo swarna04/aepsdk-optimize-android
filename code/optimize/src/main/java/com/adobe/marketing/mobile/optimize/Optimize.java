@@ -34,7 +34,7 @@ import androidx.annotation.Nullable;
  * Public class containing APIs for the Optimize extension.
  */
 public class Optimize {
-    public final static Class<? extends Extension> Extension = OptimizeExtension.class;
+    public final static Class<? extends Extension> EXTENSION = OptimizeExtension.class;
     private static final String SELF_TAG = "Optimize";
 
     private Optimize() {}
