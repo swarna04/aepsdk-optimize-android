@@ -16,22 +16,27 @@ import com.adobe.marketing.mobile.AdobeCallback;
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
-import com.adobe.marketing.mobile.ExtensionError;
-import com.adobe.marketing.mobile.ExtensionErrorCallback;
-import com.adobe.marketing.mobile.LoggingMode;
+import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.DataReaderException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.adobe.marketing.mobile.optimize.OptimizeConstants.LOG_TAG;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Public class containing APIs for the Optimize extension.
  */
 public class Optimize {
+    public final static Class<? extends Extension> EXTENSION = OptimizeExtension.class;
+    private static final String SELF_TAG = "Optimize";
+
     private Optimize() {}
 
     /**
@@ -48,13 +53,14 @@ public class Optimize {
      * <p>
      * Note: This method should be called only once in your application class.
      */
+    @Deprecated
     public static void registerExtension() {
-        MobileCore.registerExtension(OptimizeExtension.class, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(final ExtensionError extensionError) {
-                MobileCore.log(LoggingMode.ERROR, LOG_TAG,
-                        "An error occurred while registering the Optimize extension: " + extensionError.getErrorName());
+        MobileCore.registerExtension(OptimizeExtension.class, extensionError -> {
+            if (extensionError == null) {
+                return;
             }
+            Log.error(OptimizeConstants.LOG_TAG, SELF_TAG,
+                    "An error occurred while registering the Optimize extension: %s ", extensionError.getErrorName());
         });
     }
 
@@ -67,9 +73,11 @@ public class Optimize {
      * @param xdm {@code Map<String, Object>} containing additional XDM-formatted data to be sent in the personalization query request.
      * @param data {@code Map<String, Object>} containing additional free-form data to be sent in the personalization query request.
      */
-    public static void updatePropositions(final List<DecisionScope> decisionScopes, final Map<String, Object> xdm, final Map<String, Object> data) {
+    public static void updatePropositions(@NonNull final List<DecisionScope> decisionScopes,
+                                          @Nullable final Map<String, Object> xdm,
+                                          @Nullable final Map<String, Object> data) {
         if (OptimizeUtils.isNullOrEmpty(decisionScopes)) {
-            MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Cannot update propositions, provided list of decision scopes is null or empty.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of decision scopes is null or empty.");
             return;
         }
 
@@ -82,19 +90,9 @@ public class Optimize {
         }
 
         if (validScopes.size() == 0) {
-            MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Cannot update propositions, provided list of decision scopes has no valid scope.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of decision scopes has no valid scope.");
             return;
         }
-
-        final ExtensionErrorCallback<ExtensionError> errorCallback = new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(final ExtensionError extensionError) {
-                MobileCore.log(LoggingMode.DEBUG, LOG_TAG,
-                        String.format("Failed to dispatch event (%s) due to error (%s).",
-                                OptimizeConstants.EventNames.UPDATE_PROPOSITIONS_REQUEST,
-                                extensionError.getErrorName()));
-            }
-        };
 
         final List<Map<String, Object>> flattenedDecisionScopes = new ArrayList<>();
         for (final DecisionScope scope: validScopes) {
@@ -119,20 +117,19 @@ public class Optimize {
                 .setEventData(eventData)
                 .build();
 
-        MobileCore.dispatchEvent(event, errorCallback);
+        MobileCore.dispatchEvent(event);
     }
 
     /**
      * This API retrieves the previously fetched propositions, for the provided decision scopes, from the in-memory extension propositions cache.
-     * <p>
-     * The returned decision propositions are cached in-memory in the Optimize SDK extension and can be retrieved using {@link #getPropositions(List, AdobeCallback)} API.
      *
      * @param decisionScopes {@code List<DecisionScope>} containing scopes for which offers need to be requested.
      * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are retrieved from the local cache.
      */
-    public static void getPropositions(final List<DecisionScope> decisionScopes, final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
+    public static void getPropositions(@NonNull final List<DecisionScope> decisionScopes,
+                                       @NonNull final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
         if (OptimizeUtils.isNullOrEmpty(decisionScopes)) {
-            MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Cannot get propositions, provided list of decision scopes is null or empty.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided list of decision scopes is null or empty.");
             failWithError(callback, AdobeError.UNEXPECTED_ERROR);
             return;
         }
@@ -146,20 +143,10 @@ public class Optimize {
         }
 
         if (validScopes.size() == 0) {
-            MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Cannot update propositions, provided list of decision scopes has no valid scope.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of decision scopes has no valid scope.");
             failWithError(callback, AdobeError.UNEXPECTED_ERROR);
             return;
         }
-
-        final ExtensionErrorCallback<ExtensionError> errorCallback = new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(final ExtensionError extensionError) {
-                MobileCore.log(LoggingMode.DEBUG, LOG_TAG,
-                        String.format("Failed to dispatch event (%s) due to error (%s).",
-                                OptimizeConstants.EventNames.GET_PROPOSITIONS_REQUEST,
-                                extensionError.getErrorName()));
-            }
-        };
 
         final List<Map<String, Object>> flattenedDecisionScopes = new ArrayList<>();
         for (final DecisionScope scope : validScopes) {
@@ -176,7 +163,7 @@ public class Optimize {
                 .setEventData(eventData)
                 .build();
 
-        MobileCore.dispatchEventWithResponseCallback(event, new AdobeCallbackWithError<Event>() {
+        MobileCore.dispatchEventWithResponseCallback(event, OptimizeConstants.DEFAULT_RESPONSE_CALLBACK_TIMEOUT,  new AdobeCallbackWithError<Event>() {
             @Override
             public void fail(final AdobeError adobeError) {
                 failWithError(callback, adobeError);
@@ -184,31 +171,37 @@ public class Optimize {
 
             @Override
             public void call(final Event event) {
-                final Map<String, Object> eventData = event.getEventData();
-                if (OptimizeUtils.isNullOrEmpty(eventData)) {
-                    failWithError(callback, AdobeError.UNEXPECTED_ERROR);
-                    return;
-                }
-
-                if (eventData.containsKey(OptimizeConstants.EventDataKeys.RESPONSE_ERROR)) {
-                    final AdobeError error = (AdobeError) eventData.get(OptimizeConstants.EventDataKeys.RESPONSE_ERROR);
-                    failWithError(callback, error);
-                    return;
-                }
-
-                final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>)eventData.get(OptimizeConstants.EventDataKeys.PROPOSITIONS);
-
-                final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
-                for (final Map<String, Object> propositionData: propositionsList) {
-                    final Proposition proposition = Proposition.fromEventData(propositionData);
-                    if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
-                        final DecisionScope scope = new DecisionScope(proposition.getScope());
-                        propositionsMap.put(scope, proposition);
+                try {
+                    final Map<String, Object> eventData = event.getEventData();
+                    if (OptimizeUtils.isNullOrEmpty(eventData)) {
+                        failWithError(callback, AdobeError.UNEXPECTED_ERROR);
+                        return;
                     }
+
+                    if (eventData.containsKey(OptimizeConstants.EventDataKeys.RESPONSE_ERROR)
+                            && DataReader.getBoolean(eventData, OptimizeConstants.EventDataKeys.RESPONSE_ERROR)) {
+                        failWithError(callback, AdobeError.UNEXPECTED_ERROR);
+                        return;
+                    }
+
+                    final List<Map<String, Object>> propositionsList;
+                    propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
+                    final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
+                    if (propositionsList != null) {
+                        for (final Map<String, Object> propositionData : propositionsList) {
+                            final Proposition proposition = Proposition.fromEventData(propositionData);
+                            if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
+                                final DecisionScope scope = new DecisionScope(proposition.getScope());
+                                propositionsMap.put(scope, proposition);
+                            }
+                        }
+                    }
+                    callback.call(propositionsMap);
+                } catch (DataReaderException e) {
+                    failWithError(callback, AdobeError.UNEXPECTED_ERROR);
                 }
-                callback.call(propositionsMap);
             }
-        }, errorCallback);
+        });
     }
 
     /**
@@ -218,7 +211,7 @@ public class Optimize {
      *
      * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are received from the Edge network.
      */
-    public static void onPropositionsUpdate(final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
+    public static void onPropositionsUpdate(@NonNull final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
         MobileCore.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.NOTIFICATION, new AdobeCallbackWithError<Event>() {
             @Override
             public void fail(final AdobeError error) {}
@@ -230,20 +223,25 @@ public class Optimize {
                     return;
                 }
 
-                final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>)eventData.get(OptimizeConstants.EventDataKeys.PROPOSITIONS);
+                final List<Map<String, Object>> propositionsList;
+                try {
+                    propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
 
-                final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
-                for (final Map<String, Object> propositionData : propositionsList) {
-                    final Proposition proposition = Proposition.fromEventData(propositionData);
-                    if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
-                        final DecisionScope scope = new DecisionScope(proposition.getScope());
-                        propositionsMap.put(scope, proposition);
+                    final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
+                    if(propositionsList != null) {
+                        for (final Map<String, Object> propositionData : propositionsList) {
+                            final Proposition proposition = Proposition.fromEventData(propositionData);
+                            if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
+                                final DecisionScope scope = new DecisionScope(proposition.getScope());
+                                propositionsMap.put(scope, proposition);
+                            }
+                        }
                     }
-                }
 
-                if (!propositionsMap.isEmpty()) {
-                    callback.call(propositionsMap);
-                }
+                    if (!propositionsMap.isEmpty()) {
+                        callback.call(propositionsMap);
+                    }
+                } catch (DataReaderException ignored) {}
             }
         });
     }
@@ -252,20 +250,10 @@ public class Optimize {
      * Clears the client-side in-memory propositions cache.
      */
     public static void clearCachedPropositions() {
-        final ExtensionErrorCallback<ExtensionError> errorCallback = new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(final ExtensionError extensionError) {
-                MobileCore.log(LoggingMode.DEBUG, LOG_TAG,
-                        String.format("Failed to dispatch event (%s) due to error (%s).",
-                                OptimizeConstants.EventNames.CLEAR_PROPOSITIONS_REQUEST,
-                                extensionError.getErrorName()));
-            }
-        };
-
         final Event event = new Event.Builder(OptimizeConstants.EventNames.CLEAR_PROPOSITIONS_REQUEST,
                                             OptimizeConstants.EventType.OPTIMIZE,
                                             OptimizeConstants.EventSource.REQUEST_RESET).build();
-        MobileCore.dispatchEvent(event, errorCallback);
+        MobileCore.dispatchEvent(event);
     }
 
     /**

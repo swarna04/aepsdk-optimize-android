@@ -12,8 +12,7 @@
 
 package com.adobe.marketing.mobile.optimize;
 
-import com.adobe.marketing.mobile.LoggingMode;
-import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,12 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.adobe.marketing.mobile.optimize.OptimizeConstants.LOG_TAG;
-
 /**
  * {@code DecisionScope} class represents a scope used to fetch personalized offers from the Experience Edge network.
  */
 public class DecisionScope {
+    private static final String SELF_TAG = "DecisionScope";
     private static final String SCOPE_JSON = "{\"activityId\":\"%s\",\"placementId\":\"%s\"}";
     private static final String SCOPE_WITH_ITEMCOUNT_JSON = "{\"activityId\":\"%s\",\"placementId\":\"%s\",\"itemCount\":%s}";
     private static final int DEFAULT_ITEM_COUNT = 1;
@@ -83,7 +81,7 @@ public class DecisionScope {
      */
     boolean isValid() {
         if (OptimizeUtils.isNullOrEmpty(name)) {
-            MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Invalid scope! Scope name is null or empty.");
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Invalid scope! Scope name is null or empty.");
             return false;
         }
 
@@ -94,52 +92,52 @@ public class DecisionScope {
                 if (jsonObject.has(OptimizeConstants.XDM_NAME)) {
                     final String scopeName = jsonObject.getString(OptimizeConstants.XDM_NAME);
                     if (OptimizeUtils.isNullOrEmpty(scopeName)) {
-                        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, String.format("Invalid scope (%s)! Scope name is null or empty.", name));
+                        Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Invalid scope (%s)! Scope name is null or empty.", name);
                         return false;
                     }
                 } else if (jsonObject.has(OptimizeConstants.XDM_ACTIVITY_ID)) {
                     final String activityId = jsonObject.getString(OptimizeConstants.XDM_ACTIVITY_ID);
                     if (OptimizeUtils.isNullOrEmpty(activityId)) {
-                        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, String.format("Invalid scope (%s)! Activity Id is null or empty.", name));
+                        Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Invalid scope (%s)! Activity Id is null or empty.", name);
                         return false;
                     }
 
                     final String placementId = jsonObject.getString(OptimizeConstants.XDM_PLACEMENT_ID);
                     if (OptimizeUtils.isNullOrEmpty(placementId)) {
-                        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, String.format("Invalid scope (%s)! Placement Id is null or empty.", name));
+                        Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Invalid scope (%s)! Placement Id is null or empty.", name);
                         return false;
                     }
 
                     final int itemCount = jsonObject.optInt(OptimizeConstants.XDM_ITEM_COUNT, DEFAULT_ITEM_COUNT);
                     if (itemCount < DEFAULT_ITEM_COUNT) {
-                        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, String.format("Invalid scope (%s)! Item count (%d) is invalid.", name, itemCount));
+                        Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Invalid scope (%s)! Item count (%d) is invalid.", name, itemCount);
                         return false;
                     }
                 } else {
                     final String activityId = jsonObject.getString(OptimizeConstants.ACTIVITY_ID);
                     if (OptimizeUtils.isNullOrEmpty(activityId)) {
-                        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, String.format("Invalid scope (%s)! Activity Id is null or empty.", name));
+                        Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Invalid scope (%s)! Activity Id is null or empty.", name);
                         return false;
                     }
 
                     final String placementId = jsonObject.getString(OptimizeConstants.PLACEMENT_ID);
                     if (OptimizeUtils.isNullOrEmpty(placementId)) {
-                        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, String.format("Invalid scope (%s)! Placement Id is null or empty.", name));
+                        Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Invalid scope (%s)! Placement Id is null or empty.", name);
                         return false;
                     }
 
                     final int itemCount = jsonObject.optInt(OptimizeConstants.ITEM_COUNT, DEFAULT_ITEM_COUNT);
                     if (itemCount < DEFAULT_ITEM_COUNT) {
-                        MobileCore.log(LoggingMode.DEBUG, LOG_TAG, String.format("Invalid scope (%s)! Item count (%d) is invalid.", name, itemCount));
+                        Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Invalid scope (%s)! Item count (%d) is invalid.", name, itemCount);
                         return false;
                     }
                 }
             } catch (JSONException e) {
-                MobileCore.log(LoggingMode.WARNING, LOG_TAG, String.format("Scope name (%s), when decoded, does not contain a JSON string.", name));
+                Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Scope name (%s), when decoded, does not contain a JSON string.", name);
             }
         }
 
-        MobileCore.log(LoggingMode.VERBOSE, LOG_TAG, String.format("Decision scope (%s) is valid.", name));
+        Log.trace(OptimizeConstants.LOG_TAG, SELF_TAG, "Decision scope (%s) is valid.", name);
         return true;
     }
 
@@ -160,7 +158,7 @@ public class DecisionScope {
      */
     static String generateEncodedScope(final String activityId, final String placementId, final int itemCount) {
         if (OptimizeUtils.isNullOrEmpty(activityId) || OptimizeUtils.isNullOrEmpty(placementId) || itemCount <= 0) {
-            MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot generate the Base64 encoded decision scope as the provided activityId or placementId or itemCount is invalid.");
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "generateEncodedScope - Cannot generate the Base64 encoded decision scope as the provided activityId or placementId or itemCount is invalid.");
             return null;
         }
 
@@ -184,13 +182,13 @@ public class DecisionScope {
     static DecisionScope fromEventData(final Map<String, Object> data) {
         if (OptimizeUtils.isNullOrEmpty(data)
                 || !data.containsKey(OptimizeConstants.EventDataKeys.DECISION_SCOPE_NAME)) {
-            MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create DecisionScope object, provided data Map is empty or null.");
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,"Cannot create DecisionScope object, provided data Map is empty or null.");
             return null;
         }
 
         final String name = (String) data.get(OptimizeConstants.EventDataKeys.DECISION_SCOPE_NAME);
         if (OptimizeUtils.isNullOrEmpty(name)) {
-            MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create DecisionScope object, provided data does not contain valid scope name.");
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create DecisionScope object, provided data does not contain valid scope name.");
             return null;
         }
 
@@ -209,7 +207,7 @@ public class DecisionScope {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 

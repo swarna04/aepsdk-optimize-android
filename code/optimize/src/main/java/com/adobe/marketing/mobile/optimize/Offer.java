@@ -13,10 +13,10 @@
 package com.adobe.marketing.mobile.optimize;
 
 import com.adobe.marketing.mobile.Event;
-import com.adobe.marketing.mobile.ExtensionError;
-import com.adobe.marketing.mobile.ExtensionErrorCallback;
-import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.DataReaderException;
 
 import org.json.JSONObject;
 
@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.adobe.marketing.mobile.optimize.OptimizeConstants.LOG_TAG;
-
 public class Offer {
+
+    private static final String SELF_TAG = "Offer";
     private String id;
     private String etag;
     private int score;
@@ -167,7 +167,6 @@ public class Offer {
          * Builds and returns the {@code Offer} object.
          *
          * @return {@link Offer} object or null.
-         * @throws UnsupportedOperationException if this method is invoked after {@link Builder#build()}.
          */
         public Offer build() {
             throwIfAlreadyBuilt();
@@ -376,7 +375,7 @@ public class Offer {
      */
     private void trackWithData(final Map<String, Object> xdm) {
         if (OptimizeUtils.isNullOrEmpty(xdm)) {
-            MobileCore.log(LoggingMode.DEBUG, LOG_TAG,
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "Failed to dispatch track propositions request event, input xdm is null or empty.");
             return;
         }
@@ -391,13 +390,7 @@ public class Offer {
                 .setEventData(eventData)
                 .build();
 
-        MobileCore.dispatchEvent(edgeEvent, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(final ExtensionError extensionError) {
-                MobileCore.log(LoggingMode.WARNING, LOG_TAG,
-                        String.format("Failed to dispatch track propositions request event due to an error (%s)!", extensionError.getErrorName()));
-            }
-        });
+        MobileCore.dispatchEvent(edgeEvent);
     }
 
     /**
@@ -410,36 +403,35 @@ public class Offer {
      */
     static Offer fromEventData(final Map<String, Object> data) {
         if (OptimizeUtils.isNullOrEmpty(data)) {
-            MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Offer object, provided data Map is empty or null.");
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Offer object, provided data Map is empty or null.");
             return null;
         }
 
         try {
-            final String id = (String) data.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_ID);
-            final String etag = (String) data.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_ETAG);
-            final int score = data.containsKey(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_SCORE) ?
-                    (int) data.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_SCORE) : 0;
-            final String schema = (String) data.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_SCHEMA);
+            final String id = DataReader.getString(data, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_ID);
+            final String etag = DataReader.getString(data, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_ETAG);
+            final int score = DataReader.optInt(data, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_SCORE, 0);
+            final String schema = DataReader.getString(data, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_SCHEMA);
 
-            final Map<String, Object> meta = (Map<String, Object>) data.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_META);
+            final Map<String, Object> meta = DataReader.getTypedMap(Object.class, data, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_META);
 
-            final Map<String, Object> offerData = (Map<String, Object>) data.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA);
+            final Map<String, Object> offerData = DataReader.getTypedMap(Object.class, data, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA);
 
             if (!OptimizeUtils.isNullOrEmpty(offerData)) {
                 final String nestedId = (String) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_ID);
                 if (OptimizeUtils.isNullOrEmpty(id) || !id.equals(nestedId)) {
-                    MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Offer object, provided item id is null or empty or it doesn't match item data id.");
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,"Cannot create Offer object, provided item id is null or empty or it doesn't match item data id.");
                     return null;
                 }
 
                 final String format = (String) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_FORMAT);
                 if (OptimizeUtils.isNullOrEmpty(format)) {
-                    MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Offer object, provided data Map doesn't contain valid item data format.");
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Offer object, provided data Map doesn't contain valid item data format.");
                     return null;
                 }
 
-                final List<String> language = (List<String>) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_LANGUAGE);
-                final Map<String, String> characteristics = (Map<String, String>) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_CHARACTERISTICS);
+                final List<String> language = DataReader.getStringList(offerData, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_LANGUAGE);
+                final Map<String, String> characteristics = DataReader.getStringMap(offerData, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_CHARACTERISTICS);
 
 
                 String content = null;
@@ -455,7 +447,7 @@ public class Offer {
                     content = (String) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_DELIVERYURL);
                 }
                 if (content == null) {
-                    MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Offer object, provided data Map doesn't contain valid item data content or deliveryURL.");
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Offer object, provided data Map doesn't contain valid item data content or deliveryURL.");
                     return null;
                 }
 
@@ -469,10 +461,10 @@ public class Offer {
                         .build();
             } else {
                 if (!schema.equals(OptimizeConstants.JsonValues.SCHEMA_TARGET_DEFAULT)) {
-                    MobileCore.log(LoggingMode.DEBUG, LOG_TAG, "Cannot create Offer object, provided data Map doesn't contain valid item data.");
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Offer object, provided data Map doesn't contain valid item data.");
                     return null;
                 }
-                MobileCore.log(LoggingMode.VERBOSE, LOG_TAG, "Received default content proposition item, Offer content will be set to empty string.");
+                Log.trace(OptimizeConstants.LOG_TAG, SELF_TAG, "Received default content proposition item, Offer content will be set to empty string.");
                 return new Builder(id, OfferType.UNKNOWN, "")
                         .setEtag(null)
                         .setScore(0)
@@ -482,8 +474,8 @@ public class Offer {
                         .setCharacteristics(null)
                         .build();
             }
-        } catch (final ClassCastException e) {
-            MobileCore.log(LoggingMode.WARNING, LOG_TAG, "Cannot create Offer object, provided data contains invalid fields.");
+        } catch (final ClassCastException | DataReaderException e) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Offer object, provided data contains invalid fields.");
             return null;
         }
     }
@@ -513,7 +505,7 @@ public class Offer {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 

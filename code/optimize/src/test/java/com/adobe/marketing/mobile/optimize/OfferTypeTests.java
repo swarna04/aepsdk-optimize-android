@@ -12,123 +12,122 @@
 
 package com.adobe.marketing.mobile.optimize;
 
+import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class OfferTypeTests {
     @Test
     public void testOfferType_fromJson() {
         // test
         final OfferType offerType = OfferType.from("application/json");
-        assertEquals(OfferType.JSON, offerType);
+        Assert.assertEquals(OfferType.JSON, offerType);
     }
 
     @Test
     public void testOfferType_fromText() {
         // test
         final OfferType offerType = OfferType.from("text/plain");
-        assertEquals(OfferType.TEXT, offerType);
+        Assert.assertEquals(OfferType.TEXT, offerType);
     }
 
     @Test
     public void testOfferType_fromHtml() {
         // test
         final OfferType offerType = OfferType.from("text/html");
-        assertEquals(OfferType.HTML, offerType);
+        Assert.assertEquals(OfferType.HTML, offerType);
     }
 
     @Test
     public void testOfferType_fromImage() {
         // test
         final OfferType offerType = OfferType.from("image/png");
-        assertEquals(OfferType.IMAGE, offerType);
+        Assert.assertEquals(OfferType.IMAGE, offerType);
     }
 
     @Test
     public void testOfferType_fromUnknownString() {
         // test
         final OfferType offerType = OfferType.from("*/*");
-        assertEquals(OfferType.UNKNOWN, offerType);
+        Assert.assertEquals(OfferType.UNKNOWN, offerType);
     }
 
     @Test
     public void testOfferType_fromEmptyString() {
         // test
         final OfferType offerType = OfferType.from("");
-        assertEquals(OfferType.UNKNOWN, offerType);
+        Assert.assertEquals(OfferType.UNKNOWN, offerType);
     }
 
     @Test
     public void testOfferType_fromNullString() {
         // test
         final OfferType offerType = OfferType.from(null);
-        assertEquals(OfferType.UNKNOWN, offerType);
+        Assert.assertEquals(OfferType.UNKNOWN, offerType);
     }
 
     @Test
     public void testOfferType_unknownFromValues() {
         // test
-        assertEquals(OfferType.UNKNOWN, OfferType.values()[0]);
+        Assert.assertEquals(OfferType.UNKNOWN, OfferType.values()[0]);
     }
 
     @Test
     public void testOfferType_jsonFromValues() {
         // test
-        assertEquals(OfferType.JSON, OfferType.values()[1]);
+        Assert.assertEquals(OfferType.JSON, OfferType.values()[1]);
     }
 
     @Test
     public void testOfferType_textFromValues() {
         // test
-        assertEquals(OfferType.TEXT, OfferType.values()[2]);
+        Assert.assertEquals(OfferType.TEXT, OfferType.values()[2]);
     }
 
     @Test
     public void testOfferType_htmlFromValues() {
         // test
-        assertEquals(OfferType.HTML, OfferType.values()[3]);
+        Assert.assertEquals(OfferType.HTML, OfferType.values()[3]);
     }
 
     @Test
     public void testOfferType_imageFromValues() {
         // test
-        assertEquals(OfferType.IMAGE, OfferType.values()[4]);
+        Assert.assertEquals(OfferType.IMAGE, OfferType.values()[4]);
     }
 
     @Test(expected = ArrayIndexOutOfBoundsException.class)
     public void testOfferType_invalidFromValues() {
         // test
-        assertEquals(OfferType.UNKNOWN, OfferType.values()[100]);
+        Assert.assertEquals(OfferType.UNKNOWN, OfferType.values()[100]);
     }
 
     @Test
     public void testToString_jsonOfferType() {
         // test
-        assertEquals("application/json", OfferType.JSON.toString());
+        Assert.assertEquals("application/json", OfferType.JSON.toString());
     }
 
     @Test
     public void testToString_textOfferType() {
         // test
-        assertEquals("text/plain", OfferType.TEXT.toString());
+        Assert.assertEquals("text/plain", OfferType.TEXT.toString());
     }
 
     @Test
     public void testToString_htmlOfferType() {
         // test
-        assertEquals("text/html", OfferType.HTML.toString());
+        Assert.assertEquals("text/html", OfferType.HTML.toString());
     }
 
     @Test
     public void testToString_imageOfferType() {
         // test
-        assertEquals("image/*", OfferType.IMAGE.toString());
+        Assert.assertEquals("image/*", OfferType.IMAGE.toString());
     }
 
     @Test
     public void testToString_unknownOfferType() {
         // test
-        assertEquals("", OfferType.UNKNOWN.toString());
+        Assert.assertEquals("", OfferType.UNKNOWN.toString());
     }
 }

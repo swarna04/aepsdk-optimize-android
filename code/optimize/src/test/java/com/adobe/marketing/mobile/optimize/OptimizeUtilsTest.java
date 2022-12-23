@@ -14,59 +14,34 @@ package com.adobe.marketing.mobile.optimize;
 
 import android.util.Base64;
 
-import org.junit.Before;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(Base64.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
+@SuppressWarnings({"rawtypes"})
 public class OptimizeUtilsTest {
-    @Before
-    public void setup() {
-        PowerMockito.mockStatic(Base64.class);
-        Mockito.when(Base64.encodeToString((byte[]) any(), anyInt())).thenAnswer(new Answer<String>() {
-            @Override
-            public String answer(InvocationOnMock invocation) {
-                return java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]);
-            }
-        });
-        Mockito.when(Base64.decode(anyString(), anyInt())).thenAnswer(new Answer<byte[]>() {
-            @Override
-            public byte[] answer(InvocationOnMock invocation) throws Throwable {
-                return java.util.Base64.getDecoder().decode((String)invocation.getArguments()[0]);
-            }
-        });
-    }
 
     @Test
     public void testIsNullOrEmpty_nullMap() {
         // test
-        assertTrue(OptimizeUtils.isNullOrEmpty((Map<String, Object>)null));
+        Assert.assertTrue(OptimizeUtils.isNullOrEmpty((Map<String, Object>)null));
     }
 
     @Test
     public void testIsNullOrEmpty_emptyMap() {
         // test
-        assertTrue(OptimizeUtils.isNullOrEmpty(new HashMap<>()));
+        Assert.assertTrue(OptimizeUtils.isNullOrEmpty(new HashMap<>()));
     }
 
     @Test
@@ -75,19 +50,19 @@ public class OptimizeUtilsTest {
         final Map<String, Object> map = new HashMap<>();
         map.put("key", "value");
 
-        assertFalse(OptimizeUtils.isNullOrEmpty(map));
+        Assert.assertFalse(OptimizeUtils.isNullOrEmpty(map));
     }
 
     @Test
     public void testIsNullOrEmpty_nullList() {
         // test
-        assertTrue(OptimizeUtils.isNullOrEmpty((List<Object>)null));
+        Assert.assertTrue(OptimizeUtils.isNullOrEmpty((List<Object>)null));
     }
 
     @Test
     public void testIsNullOrEmpty_emptyList() {
         // test
-        assertTrue(OptimizeUtils.isNullOrEmpty(new ArrayList<>()));
+        Assert.assertTrue(OptimizeUtils.isNullOrEmpty(new ArrayList<>()));
     }
 
     @Test
@@ -96,35 +71,39 @@ public class OptimizeUtilsTest {
         final List<Object> list = new ArrayList<>();
         list.add("someString");
 
-        assertFalse(OptimizeUtils.isNullOrEmpty(list));
+        Assert.assertFalse(OptimizeUtils.isNullOrEmpty(list));
     }
 
     @Test
     public void testIsNullOrEmpty_nullString() {
         // test
         final String input = null;
-        assertTrue(OptimizeUtils.isNullOrEmpty(input));
+        Assert.assertTrue(OptimizeUtils.isNullOrEmpty(input));
     }
 
     @Test
     public void testIsNullOrEmpty_emptyString() {
         // test
         final String input = "";
-        assertTrue(OptimizeUtils.isNullOrEmpty(input));
+        Assert.assertTrue(OptimizeUtils.isNullOrEmpty(input));
     }
 
     @Test
     public void testIsNullOrEmpty_nonEmptyString() {
         // test
         final String input = "This is a test string!";
-        assertFalse(OptimizeUtils.isNullOrEmpty(input));
+        Assert.assertFalse(OptimizeUtils.isNullOrEmpty(input));
     }
 
     @Test
     public void testBase64encode_validString() {
-        // test
-        final String input = "This is a test string!";
-        assertEquals("VGhpcyBpcyBhIHRlc3Qgc3RyaW5nIQ==", OptimizeUtils.base64Encode(input));
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.encodeToString(ArgumentMatchers.any(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer) invocation -> java.util.Base64.getEncoder().encodeToString((byte[]) invocation.getArguments()[0]));
+            // test
+            final String input = "This is a test string!";
+            Assert.assertEquals("VGhpcyBpcyBhIHRlc3Qgc3RyaW5nIQ==", OptimizeUtils.base64Encode(input));
+        }
 
     }
 
@@ -132,30 +111,37 @@ public class OptimizeUtilsTest {
     public void testBase64encode_emptyString() {
         // test
         final String input = "";
-        assertEquals("", OptimizeUtils.base64Encode(input));
+        Assert.assertEquals("", OptimizeUtils.base64Encode(input));
 
     }
 
     @Test
     public void testBase64decode_validString() {
-        // test
-        final String input = "VGhpcyBpcyBhIHRlc3Qgc3RyaW5nIQ==";
-        assertEquals("This is a test string!", OptimizeUtils.base64Decode(input));
-
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final String input = "VGhpcyBpcyBhIHRlc3Qgc3RyaW5nIQ==";
+            Assert.assertEquals("This is a test string!", OptimizeUtils.base64Decode(input));
+        }
     }
 
     @Test
     public void testBase64decode_emptyString() {
         // test
         final String input = "";
-        assertEquals("", OptimizeUtils.base64Decode(input));
+        Assert.assertEquals("", OptimizeUtils.base64Decode(input));
 
     }
 
     @Test
     public void testBase64decode_invalidString() {
-        // test
-        final String input = "VGhp=";
-        assertNull(OptimizeUtils.base64Decode(input));
+        try (MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+            // test
+            final String input = "VGhp=";
+            Assert.assertNull(OptimizeUtils.base64Decode(input));
+        }
     }
 }

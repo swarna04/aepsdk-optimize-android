@@ -13,7 +13,6 @@
 package com.adobe.marketing.mobile;
 
 import static com.adobe.marketing.mobile.MonitorExtension.EventSpec;
-import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.app.Instrumentation;
@@ -23,7 +22,9 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.adobe.marketing.mobile.optimize.ADBCountDownLatch;
 import com.adobe.marketing.mobile.optimize.OptimizeTestConstants;
+import com.adobe.marketing.mobile.services.Log;
 
+import org.junit.Assert;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -35,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -47,7 +49,7 @@ public class TestHelper {
     static Application defaultApplication;
 
     // List of threads to wait for after test execution
-    private static final List<String> knownThreads = new ArrayList<String>();
+    private static final List<String> knownThreads = new ArrayList<>();
 
     static {
         knownThreads.add("pool"); // used for threads that execute the listeners code
@@ -56,7 +58,7 @@ public class TestHelper {
 
     /**
      * {@code TestRule} which sets up the MobileCore for testing before each test execution, and
-     * tearsdown the MobileCore after test execution.
+     * tears down the MobileCore after test execution.
      *
      * To use, add the following to your test class:
      * <pre>
@@ -82,20 +84,14 @@ public class TestHelper {
                     try {
                         base.evaluate();
                     } catch (Throwable e) {
-                        MobileCore.log(LoggingMode.DEBUG, "SetupCoreRule", "Wait after test failure.");
+                        Log.debug(OptimizeTestConstants.LOG_TAG, "SetupCoreRule", "Wait after test failure.");
                         throw e; // rethrow test failure
                     } finally {
                         // After test execution
-                        MobileCore.log(LoggingMode.DEBUG, "SetupCoreRule", "Finished '" + description.getMethodName() + "'");
+                        Log.debug(OptimizeTestConstants.LOG_TAG, "SetupCoreRule", "Finished '" + description.getMethodName() + "'");
                         waitForThreads(5000); // wait to allow thread to run after test execution
-                        Core core = MobileCore.getCore();
 
-                        if (core != null && core.eventHub != null) {
-                            core.eventHub.shutdown();
-                            core.eventHub = null;
-                        }
-
-                        MobileCore.setCore(null);
+                        MobileCore.resetSDK();
                         resetTestExpectations();
                     }
                 }
@@ -153,11 +149,11 @@ public class TestHelper {
         Set<Thread> threadSet = getEligibleThreads();
 
         while (threadSet.size() > 0 && ((System.currentTimeMillis() - startTime) < timeoutTestMillis)) {
-            MobileCore.log(LoggingMode.DEBUG, TAG, "waitForThreads - Still waiting for " + threadSet.size() + " thread(s)");
+            Log.debug(OptimizeTestConstants.LOG_TAG, TAG, "waitForThreads - Still waiting for " + threadSet.size() + " thread(s)");
 
             for (Thread t : threadSet) {
 
-                MobileCore.log(LoggingMode.DEBUG, TAG, "waitForThreads - Waiting for thread " + t.getName() + " (" + t.getId() + ")");
+                Log.debug(OptimizeTestConstants.LOG_TAG, TAG, "waitForThreads - Waiting for thread " + t.getName() + " (" + t.getId() + ")");
                 boolean done = false;
                 boolean timedOut = false;
 
@@ -176,10 +172,10 @@ public class TestHelper {
                 }
 
                 if (timedOut) {
-                    MobileCore.log(LoggingMode.DEBUG, TAG,
+                    Log.debug(OptimizeTestConstants.LOG_TAG, TAG,
                             "waitForThreads - Timeout out waiting for thread " + t.getName() + " (" + t.getId() + ")");
                 } else {
-                    MobileCore.log(LoggingMode.DEBUG, TAG,
+                    Log.debug(OptimizeTestConstants.LOG_TAG, TAG,
                             "waitForThreads - Done waiting for thread " + t.getName() + " (" + t.getId() + ")");
                 }
             }
@@ -187,7 +183,7 @@ public class TestHelper {
             threadSet = getEligibleThreads();
         }
 
-        MobileCore.log(LoggingMode.DEBUG, TAG, "waitForThreads - All known threads are terminated.");
+        Log.debug(OptimizeTestConstants.LOG_TAG, TAG, "waitForThreads - All known threads are terminated.");
     }
 
     /**
@@ -196,7 +192,7 @@ public class TestHelper {
      */
     private static Set<Thread> getEligibleThreads() {
         Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
-        Set<Thread> eligibleThreads = new HashSet<Thread>();
+        Set<Thread> eligibleThreads = new HashSet<>();
 
         for (Thread t : threadSet) {
             if (isAppThread(t) && !t.getState().equals(Thread.State.WAITING) && !t.getState().equals(Thread.State.TERMINATED)
@@ -234,7 +230,7 @@ public class TestHelper {
      * Resets the network and event test expectations.
      */
     public static void resetTestExpectations() {
-        MobileCore.log(LoggingMode.DEBUG, TAG, "Resetting functional test expectations for events");
+        Log.debug(OptimizeTestConstants.LOG_TAG, TAG, "Resetting functional test expectations for events");
         MonitorExtension.reset();
     }
 
@@ -273,14 +269,13 @@ public class TestHelper {
 
         if (expectedEventLatch != null) {
             boolean awaitResult = expectedEventLatch.await(timeout, TimeUnit.MILLISECONDS);
-            assertTrue("Timed out waiting for event type " + eventSpec.type + " and source " + eventSpec.source, awaitResult);
+            Assert.assertTrue("Timed out waiting for event type " + eventSpec.type + " and source " + eventSpec.source, awaitResult);
         } else {
             sleep(WAIT_TIMEOUT_MS);
         }
 
-        return receivedEvents.containsKey(eventSpec) ? receivedEvents.get(eventSpec) : Collections.<Event>emptyList();
+        return receivedEvents.containsKey(eventSpec) ? receivedEvents.get(eventSpec) : Collections.emptyList();
     }
-
 
     /**
      * Synchronous call to get the shared state for the specified {@code stateOwner}.
@@ -300,10 +295,16 @@ public class TestHelper {
                 })
                 .build();
 
-        final ADBCountDownLatch latch = new ADBCountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(1);
         final Map<String, Object> sharedState = new HashMap<>();
         MobileCore.dispatchEventWithResponseCallback(event,
-                new AdobeCallback<Event>() {
+                WAIT_EVENT_TIMEOUT_MS,
+                new AdobeCallbackWithError<Event>() {
+                    @Override
+                    public void fail(AdobeError adobeError) {
+                        Log.error(OptimizeTestConstants.LOG_TAG, TAG, "Failed to get shared state for " + stateOwner + ": " + adobeError.getErrorName());
+                    }
+
                     @Override
                     public void call(Event event) {
                         if (event.getEventData() != null) {
@@ -312,15 +313,9 @@ public class TestHelper {
 
                         latch.countDown();
                     }
-                },
-                new ExtensionErrorCallback<ExtensionError>() {
-                    @Override
-                    public void error(ExtensionError extensionError) {
-                        MobileCore.log(LoggingMode.ERROR, TAG, "Failed to get shared state for " + stateOwner + ": " + extensionError);
-                    }
                 });
 
-        assertTrue("Timeout waiting for shared state " + stateOwner, latch.await(timeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue("Timeout waiting for shared state " + stateOwner, latch.await(timeout, TimeUnit.MILLISECONDS));
         return sharedState.isEmpty() ? null : sharedState;
     }
 
@@ -340,7 +335,7 @@ public class TestHelper {
      * Clear all the shared states..
      */
     public static void clearSharedState() {
-        MobileCore.getCore().eventHub.resetSharedStates();
+        MobileCore.resetSDK();
     }
 
     /**
