@@ -30,12 +30,13 @@ import java.util.Objects;
  * and XDM shared state.
  */
 
-class MonitorExtension extends Extension {
+public class MonitorExtension extends Extension {
 
     private static final String SELF_TAG = "MonitorExtension";
 
     private static final Map<EventSpec, List<Event>> receivedEvents = new HashMap<>();
     private static final Map<EventSpec, ADBCountDownLatch> expectedEvents = new HashMap<>();
+    private static ConfigurationMonitor configurationMonitor = null;
 
     protected MonitorExtension(final ExtensionApi extensionApi) {
         super(extensionApi);
@@ -125,6 +126,16 @@ class MonitorExtension extends Extension {
         if (expectedEvents.containsKey(eventSpec)) {
             expectedEvents.get(eventSpec).countDown();
         }
+
+        SharedStateResult sharedStateResult = getApi().getSharedState(
+                "com.adobe.module.configuration",
+                event,
+                false,
+                SharedStateResolution.LAST_SET
+        );
+        if (configurationMonitor != null) {
+            configurationMonitor.call(sharedStateResult.getValue());
+        }
     }
 
     /**
@@ -192,6 +203,14 @@ class MonitorExtension extends Extension {
                 .build();
 
         MobileCore.dispatchEvent(responseEvent);
+    }
+
+    public static void configurationAwareness(ConfigurationMonitor callback) {
+        configurationMonitor = callback;
+    }
+
+    public interface ConfigurationMonitor {
+        void call(Map<String, Object> configurationState);
     }
 
     /**
