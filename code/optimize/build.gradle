@@ -212,7 +212,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.5.1'
 
     // todo change Adobe Mobile SDK Core
-    implementation 'com.github.adobe.aepsdk-core-android:core:v2.0.0-alpha.4'
+    implementation 'com.adobe.marketing.mobile:core:2.0.0-SNAPSHOT'
 
     testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoCoreVersion}"
@@ -223,13 +223,9 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
     androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
-    // todo change these once Android 2.0 snapshot is released
-    androidTestImplementation("com.adobe.marketing.mobile:edge:1.+"){
-        transitive = false
-    }
-    androidTestImplementation("com.adobe.marketing.mobile:edgeidentity:1.+"){
-        transitive = false
-    }
+    // todo verify if we really need these
+    // androidTestImplementation files('../libs/edge-release-2.0.0.aar')
+    // androidTestImplementation files('../libs/edgeidentity-release-2.0.0.aar')
 }
 
 tasks.withType(Test) {

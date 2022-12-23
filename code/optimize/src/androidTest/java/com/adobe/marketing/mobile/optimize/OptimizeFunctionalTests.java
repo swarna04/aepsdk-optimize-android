@@ -12,16 +12,15 @@
 
 package com.adobe.marketing.mobile.optimize;
 
+import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
-import com.adobe.marketing.mobile.ExtensionError;
-import com.adobe.marketing.mobile.ExtensionErrorCallback;
+import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.TestHelper;
-import com.adobe.marketing.mobile.edge.identity.Identity;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -50,14 +49,13 @@ public class OptimizeFunctionalTests {
 
     @Before
     public void setup() throws Exception {
-        // todo change once Edge Identity is fixed
-        Optimize.registerExtension();
-        Identity.registerExtension();
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        MobileCore.start(o -> latch.countDown());
-
-        latch.await();
+        MobileCore.setApplication(ApplicationProvider.getApplicationContext());
+        MobileCore.setLogLevel(LoggingMode.VERBOSE);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        MobileCore.registerExtensions(Arrays.asList(
+                Optimize.EXTENSION
+        ), o -> countDownLatch.countDown());
+        Assert.assertTrue(countDownLatch.await(1000, TimeUnit.MILLISECONDS));
         TestHelper.resetTestExpectations();
     }
 
@@ -438,12 +436,7 @@ public class OptimizeFunctionalTests {
                 build();
 
         //Action
-        MobileCore.dispatchEvent(event, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(ExtensionError extensionError) {
-                Assert.fail("Error in dispatching Edge Personalization event.");
-            }
-        });
+        MobileCore.dispatchEvent(event);
 
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
@@ -569,12 +562,7 @@ public class OptimizeFunctionalTests {
                 build();
 
         //Action
-        MobileCore.dispatchEvent(event, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(ExtensionError extensionError) {
-                Assert.fail("Error in dispatching Edge Personalization event.");
-            }
-        });
+        MobileCore.dispatchEvent(event);
 
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
@@ -708,12 +696,7 @@ public class OptimizeFunctionalTests {
                 setEventData(eventData).build();
 
         //Action
-        MobileCore.dispatchEvent(event, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(ExtensionError extensionError) {
-                Assert.fail("Error in dispatching Edge Personalization event.");
-            }
-        });
+        MobileCore.dispatchEvent(event);
 
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
@@ -817,12 +800,7 @@ public class OptimizeFunctionalTests {
                 build();
 
         //Action
-        MobileCore.dispatchEvent(event, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(ExtensionError extensionError) {
-                Assert.fail("Error in dispatching Edge Personalization event.");
-            }
-        });
+        MobileCore.dispatchEvent(event);
 
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
@@ -909,7 +887,7 @@ public class OptimizeFunctionalTests {
                 "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                 Collections.singletonList(offer),
                 "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==",
-                Collections.<String, Object>emptyMap()
+                Collections.emptyMap()
         );
 
         //Action
@@ -1068,8 +1046,6 @@ public class OptimizeFunctionalTests {
                 .get("propositions");
         Assert.assertNotNull(propositionList);
         Assert.assertEquals(1, propositionList.size());
-        Map<String, Object> propositionData = propositionList.get(0);
-        List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) propositionData.get("propositions");
         Assert.assertNotNull(propositionList);
         Assert.assertEquals(1, propositionList.size());
         Map<String, Object> propositionMap = propositionList.get(0);
@@ -1140,12 +1116,7 @@ public class OptimizeFunctionalTests {
                 build();
 
         //Action
-        MobileCore.dispatchEvent(event, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(ExtensionError extensionError) {
-                Assert.fail("Error in dispatching Edge Personalization event.");
-            }
-        });
+        MobileCore.dispatchEvent(event);
 
         Thread.sleep(1000);
 
@@ -1250,12 +1221,7 @@ public class OptimizeFunctionalTests {
                 build();
 
         //Action
-        MobileCore.dispatchEvent(event, new ExtensionErrorCallback<ExtensionError>() {
-            @Override
-            public void error(ExtensionError extensionError) {
-                Assert.fail("Error in dispatching Edge Personalization event.");
-            }
-        });
+        MobileCore.dispatchEvent(event);
 
         Thread.sleep(1000);
 
