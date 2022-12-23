@@ -16,6 +16,7 @@ public class OptimizeTestConstants {
 
     static final String EXTENSION_VERSION = "2.0.0";
     public static final String LOG_TAG = "OptimizeTest";
+    static final String CONFIG_DATA_STORE = "AdobeMobile_ConfigState";
 
     public final static class EventType {
         public static final String MONITOR = "com.adobe.functional.eventType.monitor";

@@ -16,7 +16,7 @@ class OptimizeConstants {
     static final String LOG_TAG = "Optimize";
     static final String EXTENSION_VERSION = "2.0.0";
     static final String EXTENSION_NAME = "com.adobe.optimize";
-    public static final long DEFAULT_RESPONSE_CALLBACK_TIMEOUT = 500L;
+    static final long DEFAULT_RESPONSE_CALLBACK_TIMEOUT = 500L;
 
     static final String ACTIVITY_ID = "activityId";
     static final String XDM_ACTIVITY_ID = "xdm:activityId";

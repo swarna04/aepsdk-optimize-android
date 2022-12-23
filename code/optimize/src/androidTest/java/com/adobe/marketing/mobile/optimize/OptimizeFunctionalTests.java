@@ -12,6 +12,8 @@
 
 package com.adobe.marketing.mobile.optimize;
 
+import android.app.Service;
+
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -20,10 +22,14 @@ import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.LoggingMode;
 import com.adobe.marketing.mobile.MobileCore;
+import com.adobe.marketing.mobile.MonitorExtension;
 import com.adobe.marketing.mobile.TestHelper;
+import com.adobe.marketing.mobile.services.NamedCollection;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,6 +63,14 @@ public class OptimizeFunctionalTests {
         ), o -> countDownLatch.countDown());
         Assert.assertTrue(countDownLatch.await(1000, TimeUnit.MILLISECONDS));
         TestHelper.resetTestExpectations();
+    }
+
+    @After
+    public void tearDown() {
+        NamedCollection configDataStore = ServiceProvider.getInstance().getDataStoreService().getNamedCollection(OptimizeTestConstants.CONFIG_DATA_STORE);
+        if(configDataStore != null) {
+            configDataStore.removeAll();
+        }
     }
 
     //1
@@ -1454,17 +1468,15 @@ public class OptimizeFunctionalTests {
 
     private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
+        MonitorExtension.configurationAwareness(configurationState -> latch.countDown());
         MobileCore.updateConfiguration(config);
-        MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
-
         Assert.assertTrue(latch.await(2, TimeUnit.SECONDS));
     }
 
     private void clearUpdatedConfiguration() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
+        MonitorExtension.configurationAwareness(configurationState -> latch.countDown());
         MobileCore.clearUpdatedConfiguration();
-        MobileCore.getPrivacyStatus(mobilePrivacyStatus -> latch.countDown());
-
         Assert.assertTrue(latch.await(2, TimeUnit.SECONDS));
     }
 }
