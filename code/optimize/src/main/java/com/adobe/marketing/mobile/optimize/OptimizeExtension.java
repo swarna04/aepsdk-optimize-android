@@ -114,6 +114,7 @@ class OptimizeExtension extends Extension {
      *
      * @return {@link String} containing the current installed version of this extension.
      */
+    @NonNull
     @Override
     protected String getVersion() {
         return OptimizeConstants.EXTENSION_VERSION;
@@ -124,7 +125,7 @@ class OptimizeExtension extends Extension {
      *
      * @return {@link String} containing the friendly name for this extension.
      */
-    @Nullable
+    @NonNull
     @Override
     protected String getFriendlyName() {
         return OptimizeConstants.FRIENDLY_NAME;
@@ -137,8 +138,8 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    void handleOptimizeRequestContent(final Event event) {
-        if (event == null || OptimizeUtils.isNullOrEmpty(event.getEventData())) {
+    void handleOptimizeRequestContent(@NonNull final Event event) {
+        if (OptimizeUtils.isNullOrEmpty(event.getEventData())) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleOptimizeRequestContent - Ignoring the Optimize request event, either event is null or event data is null/ empty.");
             return;
@@ -253,8 +254,8 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    void handleEdgeResponse(final Event event) {
-        if (event == null || OptimizeUtils.isNullOrEmpty(event.getEventData())) {
+    void handleEdgeResponse(@NonNull final Event event) {
+        if (OptimizeUtils.isNullOrEmpty(event.getEventData())) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleEdgeResponse - Ignoring the Edge personalization:decisions event, either event is null or event data is null/ empty.");
             return;
@@ -322,8 +323,8 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    void handleEdgeErrorResponse(final Event event) {
-        if (event == null || OptimizeUtils.isNullOrEmpty(event.getEventData())) {
+    void handleEdgeErrorResponse(@NonNull final Event event) {
+        if (OptimizeUtils.isNullOrEmpty(event.getEventData())) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleEdgeErrorResponse - Ignoring the Edge error response event, either event is null or event data is null/ empty.");
             return;
@@ -347,7 +348,7 @@ class OptimizeExtension extends Extension {
      */
     void handleGetPropositions(@NonNull final Event event) {
         final Map<String, Object> eventData = event.getEventData();
-
+        
         try {
             final List<Map<String, Object>> decisionScopesData = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.DECISION_SCOPES);
             final List<String> validScopeNames = retrieveValidDecisionScopes(decisionScopesData);
@@ -382,6 +383,7 @@ class OptimizeExtension extends Extension {
         } catch (final Exception e) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleGetPropositions - Failed to process get propositions request event due to an exception (%s)!", e.getLocalizedMessage());
+            getApi().dispatch(createResponseEventWithError(event));
         }
     }
 
@@ -444,12 +446,7 @@ class OptimizeExtension extends Extension {
      *
      * @param event incoming {@link Event} object to be processed.
      */
-    void handleClearPropositions(final Event event) {
-        if (event == null) {
-            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
-                    "handleClearPropositions - Cannot clear cached propositions, incoming event is null.");
-            return;
-        }
+    void handleClearPropositions(@NonNull final Event event) {
         cachedPropositions.clear();
     }
 
