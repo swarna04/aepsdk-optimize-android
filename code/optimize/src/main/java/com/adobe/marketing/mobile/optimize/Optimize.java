@@ -44,6 +44,7 @@ public class Optimize {
      *
      * @return {@link String} containing the current installed version of this extension.
      */
+    @NonNull
     public static String extensionVersion() {
         return OptimizeConstants.EXTENSION_VERSION;
     }
