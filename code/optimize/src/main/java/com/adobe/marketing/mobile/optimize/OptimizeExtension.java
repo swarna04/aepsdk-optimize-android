@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 class OptimizeExtension extends Extension {
