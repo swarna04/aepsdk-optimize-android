@@ -96,6 +96,7 @@ class OptimizeUtils {
      *
      * @return {@link AdobeError} corresponding to the given error code, or {@link AdobeError#UNEXPECTED_ERROR} otherwise.
      */
+    @SuppressWarnings("magicnumber")
     static AdobeError convertToAdobeError(final int errorCode) {
         final AdobeError error;
         switch (errorCode) {
