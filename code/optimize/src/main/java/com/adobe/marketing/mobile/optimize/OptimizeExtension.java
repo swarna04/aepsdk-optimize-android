@@ -12,6 +12,7 @@
 
 package com.adobe.marketing.mobile.optimize;
 
+import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
@@ -354,7 +355,7 @@ class OptimizeExtension extends Extension {
             if (OptimizeUtils.isNullOrEmpty(validScopeNames)) {
                 Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                         "handleGetPropositions - Cannot process the get propositions request event, provided list of decision scopes has no valid scope.");
-                getApi().dispatch(createResponseEventWithError(event));
+                getApi().dispatch(createResponseEventWithError(event, AdobeError.UNEXPECTED_ERROR));
                 return;
             }
 
@@ -382,7 +383,7 @@ class OptimizeExtension extends Extension {
         } catch (final Exception e) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleGetPropositions - Failed to process get propositions request event due to an exception (%s)!", e.getLocalizedMessage());
-            getApi().dispatch(createResponseEventWithError(event));
+            getApi().dispatch(createResponseEventWithError(event, AdobeError.UNEXPECTED_ERROR));
         }
     }
 
@@ -503,9 +504,9 @@ class OptimizeExtension extends Extension {
      *
      * @return {@link Event} instance.
      */
-    private Event createResponseEventWithError(final Event event) {
+    private Event createResponseEventWithError(final Event event, final AdobeError error) {
         final Map<String, Object> eventData = new HashMap<>();
-        eventData.put(OptimizeConstants.EventDataKeys.RESPONSE_ERROR, true);
+        eventData.put(OptimizeConstants.EventDataKeys.RESPONSE_ERROR, error.getErrorCode());
 
         return new Event.Builder(OptimizeConstants.EventNames.OPTIMIZE_RESPONSE,
                 OptimizeConstants.EventType.OPTIMIZE,
