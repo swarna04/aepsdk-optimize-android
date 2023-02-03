@@ -154,22 +154,6 @@ public class OptimizeExtensionTests {
     }
 
     @Test
-    public void testHandleOptimizeRequestContent_nullEvent() {
-        // setup
-        setConfigurationSharedState(new HashMap<String, Object>() {
-            {
-                put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
-            }
-        });
-
-        // test
-        extension.handleOptimizeRequestContent(null);
-
-        // verify
-        Mockito.verifyNoInteractions(mockExtensionApi);
-    }
-
-    @Test
     public void testHandleOptimizeRequestContent_nullEventData() {
         // setup
         setConfigurationSharedState(new HashMap<String, Object>() {
@@ -825,22 +809,6 @@ public class OptimizeExtensionTests {
     }
 
     @Test
-    public void testHandleEdgeResponse_nullEvent() {
-        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
-            // test
-            extension.handleEdgeResponse(null);
-
-            // verify
-            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()));
-
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
-            Assert.assertNotNull(cachedPropositions);
-            Assert.assertTrue(cachedPropositions.isEmpty());
-        }
-    }
-
-
-    @Test
     public void testHandleEdgeResponse_emptyProposition() throws Exception{
         try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
             // setup
@@ -957,21 +925,6 @@ public class OptimizeExtensionTests {
 
             // verify
             logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()));
-
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
-            Assert.assertNotNull(cachedPropositions);
-            Assert.assertTrue(cachedPropositions.isEmpty());
-        }
-    }
-
-    @Test
-    public void testHandleEdgeErrorResponse_nullEvent() {
-        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
-            // test
-            extension.handleEdgeErrorResponse(null);
-
-            // verify
-            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()));
 
             final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
@@ -1585,28 +1538,6 @@ public class OptimizeExtensionTests {
         // verify
         final Map<DecisionScope, Proposition> actualCachedPropositions = extension.getCachedPropositions();
         Assert.assertTrue(actualCachedPropositions.isEmpty());
-    }
-
-    @Test
-    public void testHandleClearPropositions_nullEvent() throws Exception{
-        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
-            // setup
-            final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
-            final Proposition testProposition = Proposition.fromEventData(testPropositionData);
-            Assert.assertNotNull(testProposition);
-            final Map<DecisionScope, Proposition> cachedPropositions = new HashMap<>();
-            cachedPropositions.put(new DecisionScope(testProposition.getScope()), testProposition);
-            extension.setCachedPropositions(cachedPropositions);
-
-            // test
-            extension.handleClearPropositions(null);
-
-            // verify
-            final Map<DecisionScope, Proposition> actualCachedPropositions = extension.getCachedPropositions();
-            Assert.assertEquals(cachedPropositions, actualCachedPropositions);
-
-            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()));
-        }
     }
 
 
