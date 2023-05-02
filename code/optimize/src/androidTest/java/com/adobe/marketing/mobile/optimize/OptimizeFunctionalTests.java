@@ -17,6 +17,7 @@ import android.app.Service;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.adobe.marketing.mobile.AdobeCallback;
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
@@ -38,6 +39,7 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -393,16 +395,250 @@ public class OptimizeFunctionalTests {
         Assert.assertEquals(decisionScopeName2, decisionScopeList.get(0));
     }
 
+    @Test
+    public void testUpdatePropositions_validSurface() throws InterruptedException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        //Action
+        Optimize.updatePropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"), null, null);
+
+        //Assert
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+
+        Assert.assertNotNull(eventsListOptimize);
+        Assert.assertNotNull(eventsListEdge);
+        Assert.assertEquals(1, eventsListOptimize.size());
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event event = eventsListOptimize.get(0);
+        Map<String, Object> eventData = event.getEventData();
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
+        Assert.assertTrue(eventData.size() > 0);
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+        List<String> surfaces = (List<String>) eventData.get("surfaces");
+        Assert.assertEquals(1, surfaces.size());
+        Assert.assertEquals("myView#htmlElement", surfaces.get(0));
+
+        //Validating Event data of Edge Request event
+        Event edgeEvent = eventsListEdge.get(0);
+        Assert.assertNotNull(edgeEvent);
+        Map<String, Object> edgeEventData = edgeEvent.getEventData();
+        Assert.assertNotNull(edgeEventData);
+        Assert.assertTrue(edgeEventData.size() > 0);
+        Assert.assertEquals("personalization.request", ((Map<String, Object>) edgeEventData.get("xdm")).get("eventType"));
+        Map<String, Object> personalizationMap = (Map<String, Object>) ((Map<String, Object>) edgeEventData.get("query")).get("personalization");
+        List<String> surfacesList = (List<String>) personalizationMap.get("surfaces");
+        Assert.assertNotNull(surfacesList);
+        Assert.assertEquals(1, surfacesList.size());
+        Assert.assertEquals("mobileapp://com.adobe.marketing.mobile.optimize.test/myView#htmlElement", surfacesList.get(0));
+    }
+
+    @Test
+    public void testUpdatePropositions_validSurfaceWithXdmAndDataAndDatasetId() throws InterruptedException {
+        //Setup
+        final String optimizeDatasetId = "111111111111111111111111";
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        configData.put("optimize.datasetId", optimizeDatasetId);
+        updateConfiguration(configData);
+
+        //Action
+        Optimize.updatePropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"),
+                new HashMap<String, Object>() {{
+                    put("myXdmKey", "myXdmValue");
+                }},
+                new HashMap<String, Object>() {{
+                    put("myKey", "myValue");
+                }});
+
+        //Assert
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+
+        Assert.assertNotNull(eventsListOptimize);
+        Assert.assertNotNull(eventsListEdge);
+        Assert.assertEquals(1, eventsListOptimize.size());
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event event = eventsListOptimize.get(0);
+        Map<String, Object> eventData = event.getEventData();
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
+        Assert.assertTrue(eventData.size() > 0);
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+        List<String> surfaces = (List<String>) eventData.get("surfaces");
+        Assert.assertEquals(1, surfaces.size());
+        Assert.assertEquals("myView#htmlElement", surfaces.get(0));
+        Map<String, Object> xdm = (Map<String, Object>) eventData.get("xdm");
+        Assert.assertEquals(1, xdm.size());
+        Assert.assertEquals("myXdmValue", xdm.get("myXdmKey"));
+        Map<String, Object> data = (Map<String, Object>) eventData.get("data");
+        Assert.assertEquals(1, data.size());
+        Assert.assertEquals("myValue", data.get("myKey"));
+
+        //Validating Event data of Edge Request event
+        Event edgeEvent = eventsListEdge.get(0);
+        Assert.assertNotNull(edgeEvent);
+        Map<String, Object> edgeEventData = edgeEvent.getEventData();
+        Assert.assertNotNull(edgeEventData);
+        Assert.assertTrue(edgeEventData.size() > 0);
+        Assert.assertEquals(optimizeDatasetId, edgeEventData.get("datasetId"));
+        Assert.assertEquals("personalization.request", ((Map<String, Object>) edgeEventData.get("xdm")).get("eventType"));
+        Map<String, Object> personalizationMap = (Map<String, Object>) ((Map<String, Object>) edgeEventData.get("query")).get("personalization");
+        List<String> surfacesList = (List<String>) personalizationMap.get("surfaces");
+        Assert.assertNotNull(surfacesList);
+        Assert.assertEquals(1, surfacesList.size());
+        Assert.assertEquals("mobileapp://com.adobe.marketing.mobile.optimize.test/myView#htmlElement", surfacesList.get(0));
+        Map<String, Object> xdmEdgeEvent = (Map<String, Object>) edgeEventData.get("xdm");
+        Assert.assertEquals(2, xdmEdgeEvent.size());
+        Assert.assertEquals("myXdmValue", xdmEdgeEvent.get("myXdmKey"));
+        Assert.assertEquals("personalization.request", xdmEdgeEvent.get("eventType"));
+        Map<String, Object> dataEdgeEvent = (Map<String, Object>) edgeEventData.get("data");
+        Assert.assertEquals(1, dataEdgeEvent.size());
+        Assert.assertEquals("myValue", dataEdgeEvent.get("myKey"));
+    }
+
+    @Test
+    public void testUpdatePropositions_multipleValidSurface() throws InterruptedException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        //Action
+        Optimize.updatePropositionsForSurfacePaths(new ArrayList<String>() {{
+            add("myView/mySubview1");
+            add("myView/mySubview2");
+        }}, null, null);
+
+        //Assert
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+
+        Assert.assertNotNull(eventsListOptimize);
+        Assert.assertNotNull(eventsListEdge);
+        Assert.assertEquals(1, eventsListOptimize.size());
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event event = eventsListOptimize.get(0);
+        Map<String, Object> eventData = event.getEventData();
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
+        Assert.assertTrue(eventData.size() > 0);
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+        List<String> surfaces = (List<String>) eventData.get("surfaces");
+        Assert.assertEquals(2, surfaces.size());
+        Assert.assertEquals("myView/mySubview1", surfaces.get(0));
+        Assert.assertEquals("myView/mySubview2", surfaces.get(1));
+
+        //Validating Event data of Edge Request event
+        Event edgeEvent = eventsListEdge.get(0);
+        Assert.assertNotNull(edgeEvent);
+        Map<String, Object> edgeEventData = edgeEvent.getEventData();
+        Assert.assertNotNull(edgeEventData);
+        Assert.assertTrue(edgeEventData.size() > 0);
+        Assert.assertEquals("personalization.request", ((Map<String, Object>) edgeEventData.get("xdm")).get("eventType"));
+        Map<String, Object> personalizationMap = (Map<String, Object>) ((Map<String, Object>) edgeEventData.get("query")).get("personalization");
+        List<String> surfacesList = (List<String>) personalizationMap.get("surfaces");
+        Assert.assertNotNull(surfacesList);
+        Assert.assertEquals(2, surfacesList.size());
+        Assert.assertEquals("mobileapp://com.adobe.marketing.mobile.optimize.test/myView/mySubview1", surfacesList.get(0));
+        Assert.assertEquals("mobileapp://com.adobe.marketing.mobile.optimize.test/myView/mySubview2", surfacesList.get(1));
+    }
+
+    @Test
+    public void testUpdatePropositions_noSurface() throws InterruptedException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        //Action
+        Optimize.updatePropositionsForSurfacePaths(new ArrayList<>(), null, null);
+
+        //Assert
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertTrue(eventsListOptimize.isEmpty());
+    }
+
+    @Test
+    public void testUpdatePropositions_emptySurface() throws InterruptedException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        //Action
+        Optimize.updatePropositionsForSurfacePaths(new ArrayList<String>() {{ add(""); }}, null, null);
+
+        //Assert
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertTrue(eventsListOptimize.isEmpty());
+    }
+
+    @Test
+    public void testUpdatePropositions_validAndInvalidSurfaces() throws InterruptedException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        //Action
+        Optimize.updatePropositionsForSurfacePaths(new ArrayList<String>() {{
+            add("");
+            add("myImageView#imageHtml");
+        }}, null, null);
+
+        //Assert
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+
+        Assert.assertNotNull(eventsListOptimize);
+        Assert.assertEquals(1, eventsListOptimize.size());
+        Assert.assertNotNull(eventsListEdge);
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event event = eventsListOptimize.get(0);
+        Map<String, Object> eventData = event.getEventData();
+        Assert.assertEquals(OptimizeTestConstants.EventType.OPTIMIZE, event.getType());
+        Assert.assertEquals(OptimizeTestConstants.EventSource.REQUEST_CONTENT, event.getSource());
+        Assert.assertTrue(eventData.size() > 0);
+        Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+        List<String> surfaces = (List<String>) eventData.get("surfaces");
+        Assert.assertEquals(1, surfaces.size());
+        Assert.assertEquals("myImageView#imageHtml", surfaces.get(0));
+
+        //Validating Event data of Edge Request event
+        Event edgeEvent = eventsListEdge.get(0);
+        Assert.assertNotNull(edgeEvent);
+        Map<String, Object> edgeEventData = edgeEvent.getEventData();
+        Assert.assertNotNull(edgeEventData);
+        Assert.assertTrue(edgeEventData.size() > 0);
+        Assert.assertEquals("personalization.request", ((Map<String, Object>) edgeEventData.get("xdm")).get("eventType"));
+        Map<String, Object> personalizationMap = (Map<String, Object>) ((Map<String, Object>) edgeEventData.get("query")).get("personalization");
+        List<String> surfacesList = (List<String>) personalizationMap.get("surfaces");
+        Assert.assertNotNull(surfacesList);
+        Assert.assertEquals(1, surfaces.size());
+        Assert.assertEquals("mobileapp://com.adobe.marketing.mobile.optimize.test/myImageView#imageHtml", surfacesList.get(0));
+    }
+
     //7a
     @Test
     public void testGetPropositions_decisionScopeInCache() throws InterruptedException, IOException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
+        //Call updatePropositions to update the personalizationRequestEventId
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -434,7 +670,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\": \"" + eventsListOptimize.get(0).getUniqueIdentifier() + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -470,7 +706,7 @@ public class OptimizeFunctionalTests {
             }
         });
 
-        countDownLatch.await(1, TimeUnit.SECONDS);
+        countDownLatch.await(10, TimeUnit.SECONDS);
         //Assertions
         List<Event> optimizeResponseEventsList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.RESPONSE_CONTENT);
 
@@ -499,12 +735,18 @@ public class OptimizeFunctionalTests {
     @Test
     public void testGetPropositions_decisionScopeInCacheFromTargetResponseWithClickTracking() throws ClassCastException, InterruptedException,IOException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
         final String decisionScopeString = "myMbox1";
 
+        //Call updatePropositions to update the personalizationRequestEventId
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -560,7 +802,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\": \"" + eventsListOptimize.get(0).getUniqueIdentifier() + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -659,12 +901,18 @@ public class OptimizeFunctionalTests {
     @Test
     public void testGetPropositions_notAllDecisionScopesInCache() throws IOException, InterruptedException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
+        //Call updatePropositions to update the personalizationRequestEventId
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -695,7 +943,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\": \"" + eventsListOptimize.get(0).getUniqueIdentifier() + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -762,12 +1010,18 @@ public class OptimizeFunctionalTests {
     @Test
     public void testGetPropositions_noDecisionScopeInCache() throws IOException, InterruptedException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
+        //Call updatePropositions to update the personalizationRequestEventId
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -798,7 +1052,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\": \"" + eventsListOptimize.get(0).getUniqueIdentifier() + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -886,6 +1140,323 @@ public class OptimizeFunctionalTests {
 
         Assert.assertFalse(propositionMap.containsKey(decisionScope1));
         Assert.assertFalse(propositionMap.containsKey(decisionScope2));
+    }
+
+    @Test
+    public void testGetPropositions_surfaceInCache() throws InterruptedException, IOException {
+        //setup
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        //Call updatePropositions to update the personalizationRequestEventId
+        Optimize.updatePropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"), null, null);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
+        final String edgeResponseData = "{\n" +
+                "                                  \"payload\": [\n" +
+                "                                    {\n" +
+                "                                        \"id\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n" +
+                "                                        \"scope\": \"myView#htmlElement\",\n" +
+                "                                        \"scopeDetails\": {\n" +
+                "                                            \"correlationID\": \"cccccccc-cccc-cccc-cccc-cccccccccccc\",\n" +
+                "                                            \"characteristics\": {\n" +
+                "                                               \"eventToken\": \"someToken\"\n" +
+                "                                            },\n" +
+                "                                            \"decisionProvider\": \"AJO\",\n" +
+                "                                            \"activity\": {\n" +
+                "                                               \"id\": \"dddddddd-dddd-dddd-dddd-dddddddddddd#eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee\"\n" +
+                "                                            }\n" +
+                "                                        },\n" +
+                "                                        \"items\": [\n" +
+                "                                            {\n" +
+                "                                                \"id\": \"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\",\n" +
+                "                                                \"schema\": \"https://ns.adobe.com/personalization/html-content-item\",\n" +
+                "                                                \"data\": {\n" +
+                "                                                    \"content\": \"<h1>This is HTML content</h1>\"\n" +
+                "                                                }\n" +
+                "                                            }\n" +
+                "                                        ]\n" +
+                "                                    }\n" +
+                "                                  ],\n" +
+                "                                \"requestEventId\": \"" + eventsListOptimize.get(0).getUniqueIdentifier() + "\",\n" +
+                "                                \"requestId\": \"FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF\",\n" +
+                "                                \"type\": \"personalization:decisions\"\n" +
+                "                              }";
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, new TypeReference<Map<String, Object>>() {});
+
+        Event event = new Event.Builder(
+                "AEP Response Event Handle",
+                OptimizeTestConstants.EventType.EDGE,
+                OptimizeTestConstants.EventSource.PERSONALIZATION).
+                setEventData(eventData).
+                build();
+
+        //Action
+        MobileCore.dispatchEvent(event);
+
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+        final Map<String, Proposition> propositionMap = new HashMap<>();
+        final ADBCountDownLatch countDownLatch = new ADBCountDownLatch(1);
+        Optimize.getPropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"), new AdobeCallbackWithError<Map<String, Proposition>>() {
+            @Override
+            public void fail(AdobeError adobeError) {
+                Assert.fail("Error in getting cached propositions");
+            }
+
+            @Override
+            public void call(Map<String, Proposition> surfacePropositionMap) {
+                propositionMap.putAll(surfacePropositionMap);
+                countDownLatch.countDown();
+            }
+        });
+
+        countDownLatch.await(1, TimeUnit.SECONDS);
+        //Assertions
+        List<Event> optimizeResponseEventsList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.RESPONSE_CONTENT);
+
+        Assert.assertNotNull(optimizeResponseEventsList);
+        Assert.assertEquals(1, optimizeResponseEventsList.size());
+        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        Assert.assertEquals(1, propositionMap.size());
+        Proposition proposition = propositionMap.get("myView#htmlElement");
+        Assert.assertNotNull(proposition);
+        Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
+        Assert.assertEquals("myView#htmlElement", proposition.getScope());
+        Assert.assertEquals(1, proposition.getOffers().size());
+        Assert.assertEquals(4, proposition.getScopeDetails().size());
+        Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
+        Assert.assertEquals("AJO", proposition.getScopeDetails().get("decisionProvider"));
+        Map<String, Object> characteristics = (Map<String, Object>) proposition.getScopeDetails().get("characteristics");
+        Assert.assertEquals("someToken", characteristics.get("eventToken"));
+        Map<String, Object> activity = (Map<String, Object>) proposition.getScopeDetails().get("activity");
+        Assert.assertEquals("dddddddd-dddd-dddd-dddd-dddddddddddd#eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", activity.get("id"));
+
+        Assert.assertEquals(1, proposition.getOffers().size());
+        final Offer offer = proposition.getOffers().get(0);
+        Assert.assertEquals("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", offer.getId());
+        Assert.assertEquals("https://ns.adobe.com/personalization/html-content-item", offer.getSchema());
+        Assert.assertEquals(OfferType.UNKNOWN, offer.getType());
+        Assert.assertEquals("<h1>This is HTML content</h1>", offer.getContent());
+    }
+
+    @Test
+    public void testGetPropositions_noSurfaceInCache() throws InterruptedException, IOException {
+        //setup
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        // Action
+        final Map<String, Proposition> propositionMap = new HashMap<>();
+        final ADBCountDownLatch countDownLatch = new ADBCountDownLatch(1);
+        Optimize.getPropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"), new AdobeCallbackWithError<Map<String, Proposition>>() {
+            @Override
+            public void fail(AdobeError adobeError) {
+                Assert.fail("Error in getting cached propositions");
+            }
+
+            @Override
+            public void call(Map<String, Proposition> surfacePropositionMap) {
+                propositionMap.putAll(surfacePropositionMap);
+                countDownLatch.countDown();
+            }
+        });
+
+        countDownLatch.await(1, TimeUnit.SECONDS);
+        //Assertions
+        List<Event> optimizeResponseEventsList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.RESPONSE_CONTENT);
+
+        Assert.assertNotNull(optimizeResponseEventsList);
+        Assert.assertEquals(1, optimizeResponseEventsList.size());
+        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        Assert.assertEquals(0, propositionMap.size());
+    }
+
+    @Test
+    public void testGetPropositions_noSurface() throws InterruptedException, IOException {
+        //setup
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        // Action
+        final Map<String, Proposition> propositionMap = new HashMap<>();
+        final AdobeError[] error = new AdobeError[1];
+        final ADBCountDownLatch countDownLatch = new ADBCountDownLatch(1);
+        final ADBCountDownLatch countDownLatch2 = new ADBCountDownLatch(1);
+        Optimize.getPropositionsForSurfacePaths(new ArrayList<>(), new AdobeCallbackWithError<Map<String, Proposition>>() {
+            @Override
+            public void fail(AdobeError adobeError) {
+                countDownLatch2.countDown();
+                error[0] = adobeError;
+            }
+
+            @Override
+            public void call(Map<String, Proposition> surfacePropositionMap) {
+                propositionMap.putAll(surfacePropositionMap);
+                countDownLatch.countDown();
+            }
+        });
+
+
+        Assert.assertFalse(countDownLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(countDownLatch2.await(1, TimeUnit.SECONDS));
+        Assert.assertEquals(AdobeError.UNEXPECTED_ERROR, error[0]);
+
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertTrue(eventsListOptimize.isEmpty());
+    }
+
+    @Test
+    public void testGetPropositions_emptySurface() throws InterruptedException, IOException {
+        //setup
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        // Action
+        final Map<String, Proposition> propositionMap = new HashMap<>();
+        final AdobeError[] error = new AdobeError[1];
+        final ADBCountDownLatch countDownLatch = new ADBCountDownLatch(1);
+        final ADBCountDownLatch countDownLatch2 = new ADBCountDownLatch(1);
+        Optimize.getPropositionsForSurfacePaths(Collections.singletonList(""), new AdobeCallbackWithError<Map<String, Proposition>>() {
+            @Override
+            public void fail(AdobeError adobeError) {
+                countDownLatch2.countDown();
+                error[0] = adobeError;
+            }
+
+            @Override
+            public void call(Map<String, Proposition> surfacePropositionMap) {
+                propositionMap.putAll(surfacePropositionMap);
+                countDownLatch.countDown();
+            }
+        });
+
+
+        Assert.assertFalse(countDownLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(countDownLatch2.await(1, TimeUnit.SECONDS));
+        Assert.assertEquals(AdobeError.UNEXPECTED_ERROR, error[0]);
+
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertTrue(eventsListOptimize.isEmpty());
+    }
+
+    @Test
+    public void testGetPropositions_validAndInvalidSurface() throws InterruptedException, IOException {
+        //setup
+        final Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        //Call updatePropositions to update the personalizationRequestEventId
+        Optimize.updatePropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"), null, null);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
+        final String edgeResponseData = "{\n" +
+                "                                  \"payload\": [\n" +
+                "                                    {\n" +
+                "                                        \"id\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n" +
+                "                                        \"scope\": \"myView#htmlElement\",\n" +
+                "                                        \"scopeDetails\": {\n" +
+                "                                            \"correlationID\": \"cccccccc-cccc-cccc-cccc-cccccccccccc\",\n" +
+                "                                            \"characteristics\": {\n" +
+                "                                               \"eventToken\": \"someToken\"\n" +
+                "                                            },\n" +
+                "                                            \"decisionProvider\": \"AJO\",\n" +
+                "                                            \"activity\": {\n" +
+                "                                               \"id\": \"dddddddd-dddd-dddd-dddd-dddddddddddd#eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee\"\n" +
+                "                                            }\n" +
+                "                                        },\n" +
+                "                                        \"items\": [\n" +
+                "                                            {\n" +
+                "                                                \"id\": \"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb\",\n" +
+                "                                                \"schema\": \"https://ns.adobe.com/personalization/html-content-item\",\n" +
+                "                                                \"data\": {\n" +
+                "                                                    \"content\": \"<h1>This is HTML content</h1>\"\n" +
+                "                                                }\n" +
+                "                                            }\n" +
+                "                                        ]\n" +
+                "                                    }\n" +
+                "                                  ],\n" +
+                "                                \"requestEventId\": \"" + eventsListOptimize.get(0).getUniqueIdentifier() + "\",\n" +
+                "                                \"requestId\": \"FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF\",\n" +
+                "                                \"type\": \"personalization:decisions\"\n" +
+                "                              }";
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> eventData = objectMapper.readValue(edgeResponseData, new TypeReference<Map<String, Object>>() {});
+
+        Event event = new Event.Builder(
+                "AEP Response Event Handle",
+                OptimizeTestConstants.EventType.EDGE,
+                OptimizeTestConstants.EventSource.PERSONALIZATION).
+                setEventData(eventData).
+                build();
+
+        //Action
+        MobileCore.dispatchEvent(event);
+
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+        final Map<String, Proposition> propositionMap = new HashMap<>();
+        final ADBCountDownLatch countDownLatch = new ADBCountDownLatch(1);
+        Optimize.getPropositionsForSurfacePaths(new ArrayList<String>() {{
+            add("myView#htmlElement");
+            add("");
+        }}, new AdobeCallbackWithError<Map<String, Proposition>>() {
+            @Override
+            public void fail(AdobeError adobeError) {
+                Assert.fail("Error in getting cached propositions");
+            }
+
+            @Override
+            public void call(Map<String, Proposition> surfacePropositionMap) {
+                propositionMap.putAll(surfacePropositionMap);
+                countDownLatch.countDown();
+            }
+        });
+
+        countDownLatch.await(1, TimeUnit.SECONDS);
+        //Assertions
+        List<Event> eventsRequestListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertEquals(1, eventsRequestListOptimize.size());
+
+        List<Event> optimizeResponseEventsList = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.RESPONSE_CONTENT);
+
+        Assert.assertNotNull(optimizeResponseEventsList);
+        Assert.assertEquals(1, optimizeResponseEventsList.size());
+        Assert.assertNull(optimizeResponseEventsList.get(0).getEventData().get("responseerror"));
+        Assert.assertEquals(1, propositionMap.size());
+        Proposition proposition = propositionMap.get("myView#htmlElement");
+        Assert.assertNotNull(proposition);
+        Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
+        Assert.assertEquals("myView#htmlElement", proposition.getScope());
+        Assert.assertEquals(1, proposition.getOffers().size());
+        Assert.assertEquals(4, proposition.getScopeDetails().size());
+        Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
+        Assert.assertEquals("AJO", proposition.getScopeDetails().get("decisionProvider"));
+        Map<String, Object> characteristics = (Map<String, Object>) proposition.getScopeDetails().get("characteristics");
+        Assert.assertEquals("someToken", characteristics.get("eventToken"));
+        Map<String, Object> activity = (Map<String, Object>) proposition.getScopeDetails().get("activity");
+        Assert.assertEquals("dddddddd-dddd-dddd-dddd-dddddddddddd#eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", activity.get("id"));
+
+        Assert.assertEquals(1, proposition.getOffers().size());
+        final Offer offer = proposition.getOffers().get(0);
+        Assert.assertEquals("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", offer.getId());
+        Assert.assertEquals("https://ns.adobe.com/personalization/html-content-item", offer.getSchema());
+        Assert.assertEquals(OfferType.UNKNOWN, offer.getType());
+        Assert.assertEquals("<h1>This is HTML content</h1>", offer.getContent());
     }
 
     //11
@@ -1078,12 +1649,18 @@ public class OptimizeFunctionalTests {
     @Test
     public void testClearCachedPropositions() throws InterruptedException, IOException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
+        //Call updatePropositions to update the personalizationRequestEventId
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -1114,7 +1691,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\": \"" + eventsListOptimize.get(0).getUniqueIdentifier() + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -1189,6 +1766,13 @@ public class OptimizeFunctionalTests {
         updateConfiguration(configData);
         final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
+        //Call updatePropositions to update the personalizationRequestEventId
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Thread.sleep(1000);
+        TestHelper.resetTestExpectations();
+
+        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -1219,7 +1803,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\": \"" + eventsListOptimize.get(0).getUniqueIdentifier() + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -1414,9 +1998,6 @@ public class OptimizeFunctionalTests {
         Assert.assertNotNull(items);
         Assert.assertEquals(1, items.size());
         Assert.assertEquals("246315", items.get(0).get("id"));
-
-
-
     }
 
     //18
@@ -1464,6 +2045,253 @@ public class OptimizeFunctionalTests {
         final Map<String, Object> decisioning = (Map<String, Object>)experience.get("decisioning");
         Assert.assertNotNull(decisioning);
         Assert.assertEquals("de03ac85-802a-4331-a905-a57053164d35", decisioning.get("propositionID"));
+    }
+
+
+    @Test
+    public void testOnPropositionsUpdate_validPropositionForSurface() throws InterruptedException, IOException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        //Action
+        Optimize.onPropositionsUpdate(propositionMap -> {
+
+            // verify
+            Assert.assertEquals(1, propositionMap.size());
+            DecisionScope decisionScope = new DecisionScope("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==");
+            Assert.assertNotNull(propositionMap.get(decisionScope));
+
+            Proposition proposition = propositionMap.get(decisionScope);
+            Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
+            Assert.assertEquals("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==", proposition.getScope());
+            Assert.assertEquals(1, proposition.getOffers().size());
+            Assert.assertEquals("xcore:personalized-offer:1111111111111111", proposition.getOffers().get(0).getId());
+            Assert.assertEquals("https://ns.adobe.com/experience/offer-management/content-component-text", proposition.getOffers().get(0).getSchema());
+            Assert.assertEquals(OfferType.TEXT,  proposition.getOffers().get(0).getType()); // Offer format is not returned in Edge response
+            Assert.assertEquals("This is a plain text content!",  proposition.getOffers().get(0).getContent());
+        });
+
+        // Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        final String optimizeNotificationData = "{\n" +
+                "                                   \"propositions\": [\n" +
+                "                                    {\n" +
+                "                                        \"id\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n" +
+                "                                        \"scope\": \"eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==\",\n" +
+                "                                        \"items\": [\n" +
+                "                                            {\n" +
+                "                                                \"id\": \"xcore:personalized-offer:1111111111111111\",\n" +
+                "                                                \"schema\": \"https://ns.adobe.com/experience/offer-management/content-component-text\",\n" +
+                "                                                \"data\": {\n" +
+                "                                                    \"id\": \"xcore:personalized-offer:1111111111111111\",\n" +
+                "                                                    \"type\": 2,\n" +
+                "                                                    \"content\": \"This is a plain text content!\"\n" +
+                "                                                }\n" +
+                "                                            }\n" +
+                "                                        ]\n" +
+                "                                    }\n" +
+                "                                   ]\n" +
+                "                               }";
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> eventData = objectMapper.readValue(optimizeNotificationData, new TypeReference<Map<String, Object>>() {});
+
+        Event event = new Event.Builder(
+                "Personalization Notification",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.NOTIFICATION).
+                setEventData(eventData).
+                build();
+
+        MobileCore.dispatchEvent(event);
+    }
+
+    @Test
+    public void testOnPropositionsUpdate_emptyPropositionArray() throws InterruptedException, IOException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        // onPropositionsUpdate should not be called for empty propositions in personalization notification response
+        //Action
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        Optimize.onPropositionsUpdate(propositionMap -> {
+            countDownLatch.countDown();
+        });
+
+        //Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        final String optimizeNotificationData = "{\n" +
+                "                                   \"propositions\": []\n" +
+                "                               }";
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> eventData = objectMapper.readValue(optimizeNotificationData, new TypeReference<Map<String, Object>>() {});
+
+        Event event = new Event.Builder(
+                "Personalization Notification",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.NOTIFICATION).
+                setEventData(eventData).
+                build();
+
+        MobileCore.dispatchEvent(event);
+
+        // verify
+        Assert.assertFalse(countDownLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testOnPropositionsUpdate_nullPropositionArray() throws InterruptedException, IOException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        // onPropositionsUpdate should not be called for null propositions in personalization notification response
+        //Action
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        Optimize.onPropositionsUpdate(propositionMap -> {
+            countDownLatch.countDown();
+        });
+
+        // Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        Event event = new Event.Builder(
+                "Personalization Notification",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.NOTIFICATION).
+                setEventData(null).
+                build();
+
+        MobileCore.dispatchEvent(event);
+
+        // verify
+        Assert.assertFalse(countDownLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testOnPropositionsUpdateForSurfaces_validPropositionForSurface() throws InterruptedException, IOException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        //Action
+        Optimize.onPropositionsUpdateForSurfaces(propositionMap -> {
+
+            // verify
+            Assert.assertEquals(1, propositionMap.size());
+            Assert.assertNotNull(propositionMap.get("myView#htmlElement"));
+
+            Proposition proposition = propositionMap.get("myView#htmlElement");
+            Assert.assertEquals("2cceff23-5eea-4bad-af5f-abb1aca1ea2e", proposition.getId());
+            Assert.assertEquals("myView#htmlElement", proposition.getScope());
+            Assert.assertEquals(1, proposition.getOffers().size());
+            Assert.assertEquals("fd125be6-f505-4640-ba26-9527c682e1a8", proposition.getOffers().get(0).getId());
+            Assert.assertEquals("https://ns.adobe.com/personalization/html-content-item", proposition.getOffers().get(0).getSchema());
+            Assert.assertEquals(OfferType.UNKNOWN,  proposition.getOffers().get(0).getType()); // Offer format is not returned in Edge response
+            Assert.assertEquals("<h3>This is a HTML content!</h3>",  proposition.getOffers().get(0).getContent());
+        });
+
+        // Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        final String optimizeNotificationData = "{\n" +
+                "                                   \"propositions\": [\n" +
+                "                                    {\n" +
+                "                                        \"id\": \"2cceff23-5eea-4bad-af5f-abb1aca1ea2e\",\n" +
+                "                                        \"scope\": \"myView#htmlElement\",\n" +
+                "                                        \"items\": [\n" +
+                "                                            {\n" +
+                "                                                \"id\": \"fd125be6-f505-4640-ba26-9527c682e1a8\",\n" +
+                "                                                \"schema\": \"https://ns.adobe.com/personalization/html-content-item\",\n" +
+                "                                                \"data\": {\n" +
+                "                                                    \"type\": 0,\n" +
+                "                                                    \"content\": \"<h3>This is a HTML content!</h3>\"\n" +
+                "                                                }\n" +
+                "                                            }\n" +
+                "                                        ]\n" +
+                "                                    }\n" +
+                "                                   ]\n" +
+                "                               }";
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> eventData = objectMapper.readValue(optimizeNotificationData, new TypeReference<Map<String, Object>>() {});
+
+        Event event = new Event.Builder(
+                "Personalization Notification",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.NOTIFICATION).
+                setEventData(eventData).
+                build();
+
+        MobileCore.dispatchEvent(event);
+    }
+
+    @Test
+    public void testOnPropositionsUpdateForSurfaces_emptyPropositionArray() throws InterruptedException, IOException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        // onPropositionsUpdate should not be called for empty propositions in personalization notification response
+        //Action
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        Optimize.onPropositionsUpdateForSurfaces(propositionMap -> {
+            countDownLatch.countDown();
+        });
+
+        //Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        final String optimizeNotificationData = "{\n" +
+                "                                   \"propositions\": []\n" +
+                "                               }";
+
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> eventData = objectMapper.readValue(optimizeNotificationData, new TypeReference<Map<String, Object>>() {});
+
+        Event event = new Event.Builder(
+                "Personalization Notification",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.NOTIFICATION).
+                setEventData(eventData).
+                build();
+
+        MobileCore.dispatchEvent(event);
+
+        // verify
+        Assert.assertFalse(countDownLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testOnPropositionsUpdateForSurfaces_nullPropositionArray() throws InterruptedException, IOException {
+        //Setup
+        Map<String, Object> configData = new HashMap<>();
+        configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        updateConfiguration(configData);
+
+        // onPropositionsUpdate should not be called for null propositions in personalization notification response
+        //Action
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        Optimize.onPropositionsUpdateForSurfaces(propositionMap -> {
+            countDownLatch.countDown();
+        });
+
+        // Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        Event event = new Event.Builder(
+                "Personalization Notification",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.NOTIFICATION).
+                setEventData(null).
+                build();
+
+        MobileCore.dispatchEvent(event);
+
+        // verify
+        Assert.assertFalse(countDownLatch.await(1, TimeUnit.SECONDS));
     }
 
     private void updateConfiguration(final Map<String, Object> config) throws InterruptedException {

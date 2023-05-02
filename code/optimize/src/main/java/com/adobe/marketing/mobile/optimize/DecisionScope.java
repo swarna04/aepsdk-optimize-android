@@ -24,6 +24,7 @@ import java.util.Objects;
 /**
  * {@code DecisionScope} class represents a scope used to fetch personalized offers from the Experience Edge network.
  */
+@Deprecated
 public class DecisionScope {
     private static final String SELF_TAG = "DecisionScope";
     private static final String SCOPE_JSON = "{\"activityId\":\"%s\",\"placementId\":\"%s\"}";

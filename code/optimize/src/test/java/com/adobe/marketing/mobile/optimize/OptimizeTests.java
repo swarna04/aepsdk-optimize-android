@@ -35,6 +35,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,12 +44,14 @@ import java.util.Map;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class OptimizeTests {
     private Map<DecisionScope, Proposition> responseMap;
+    private Map<String, Proposition> responseMapForSurface;
     private AdobeError responseError;
 
     @After
     public void teardown() {
         responseMap = null;
         responseError = null;
+        responseMapForSurface = null;
     }
 
     @Test
@@ -285,6 +288,161 @@ public class OptimizeTests {
     }
 
     @Test
+    public void testUpdatePropositionsForSurfacePaths_validSurface() {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
+             MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            // setup
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+
+            // test
+            Optimize.updatePropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"), null, null);
+
+            //verify
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
+            final Event event = eventCaptor.getValue();
+
+            Assert.assertNotNull(event);
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+
+            final Map<String, Object> eventData = event.getEventData();
+            Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+            Assert.assertNull(eventData.get("xdm"));
+            Assert.assertNull(eventData.get("data"));
+
+            final List<String> scopesList = (List<String>) eventData.get("surfaces");
+            Assert.assertEquals(1, scopesList.size());
+
+            final String surfaceData = scopesList.get(0);
+            Assert.assertEquals("myView#htmlElement", surfaceData);
+        }
+    }
+
+    @Test
+    public void testUpdatePropositionsForSurfacePaths_validSurfaceWithXDMAndData() {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
+             MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            // setup
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+
+            // test
+            Optimize.updatePropositionsForSurfacePaths(Collections.singletonList("myView#featureJson"),
+                    new HashMap<String, Object>() {
+                        {
+                            put("myXdmKey", "myXdmValue");
+                        }
+                    },
+                    new HashMap<String, Object>() {
+                        {
+                            put("myKey", "myValue");
+                        }
+                    });
+
+
+            //verify
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
+            final Event event = eventCaptor.getValue();
+
+            Assert.assertNotNull(event);
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+
+            final Map<String, Object> eventData = event.getEventData();
+            Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+
+            Map<String, Object> xdm = (Map<String, Object>) eventData.get("xdm");
+            Assert.assertNotNull(xdm);
+            Assert.assertEquals(1, xdm.size());
+            Assert.assertEquals("myXdmValue", xdm.get("myXdmKey"));
+
+            Map<String, Object> data = (Map<String, Object>) eventData.get("data");
+            Assert.assertNotNull(data);
+            Assert.assertEquals(1, data.size());
+            Assert.assertEquals("myValue", data.get("myKey"));
+
+            final List<String> scopesList = (List<String>) eventData.get("surfaces");
+            Assert.assertEquals(1, scopesList.size());
+            Assert.assertEquals("myView#featureJson", scopesList.get(0));
+        }
+    }
+
+    @Test
+    public void testUpdatePropositionsForSurfacePaths_multipleValidSurface() {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
+             MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            // setup
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+
+            // test
+            Optimize.updatePropositionsForSurfacePaths(new ArrayList<String>() {{
+                add("myView/mySubview1");
+                add("myView/mySubview2");
+            }}, null, null);
+
+            //verify
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEvent(eventCaptor.capture()));
+            final Event event = eventCaptor.getValue();
+
+            Assert.assertNotNull(event);
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+
+            final Map<String, Object> eventData = event.getEventData();
+            Assert.assertEquals("updatepropositions", eventData.get("requesttype"));
+            Assert.assertNull(eventData.get("xdm"));
+            Assert.assertNull(eventData.get("data"));
+
+            final List<String> scopesList = (List<String>) eventData.get("surfaces");
+            Assert.assertEquals(2, scopesList.size());
+            Assert.assertEquals("myView/mySubview1", scopesList.get(0));
+            Assert.assertEquals("myView/mySubview2", scopesList.get(1));
+        }
+    }
+
+    @Test
+    public void testUpdatePropositionsForSurfacePaths_emptySurfaceList() {
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // test
+            Optimize.updatePropositionsForSurfacePaths(new ArrayList<>(), null, null);
+
+            //verify
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+        }
+    }
+
+    @Test
+    public void testUpdatePropositionsForSurfacePaths_nullSurfaceList() {
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // test
+            Optimize.updatePropositionsForSurfacePaths(null, null, null);
+
+            //verify
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+        }
+    }
+
+    @Test
+    public void testUpdatePropositionsForSurfacePaths_invalidSurfaceInList() {
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class);
+             MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+
+            // test
+            Optimize.updatePropositionsForSurfacePaths(Collections.singletonList(""), null, null);
+
+            //verify
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+        }
+    }
+
+    @Test
     public void testGetPropositions_validDecisionScope() throws Exception {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
              MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
@@ -477,6 +635,181 @@ public class OptimizeTests {
     }
 
     @Test
+    public void testGetPropositionsForSurfacePaths_validSurface() throws Exception {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
+             MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            // setup
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+
+            // test
+            Optimize.getPropositionsForSurfacePaths(Collections.singletonList("/myView#htmlElement"), new AdobeCallbackWithError<Map<String, Proposition>>() {
+                @Override
+                public void fail(AdobeError adobeError) {
+                    responseError = adobeError;
+                }
+
+                @Override
+                public void call(Map<String, Proposition> propositionsMap) {
+                    responseMapForSurface = propositionsMap;
+                }
+            });
+
+            // verify
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            final ArgumentCaptor<AdobeCallbackWithError<Event>> callbackCaptor = ArgumentCaptor.forClass(AdobeCallbackWithError.class);
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEventWithResponseCallback(eventCaptor.capture(), ArgumentMatchers.anyLong(), callbackCaptor.capture()));
+            final Event event = eventCaptor.getValue();
+            final AdobeCallbackWithError<Event> callbackWithError = callbackCaptor.getValue();
+
+            // verify dispatched event
+            Assert.assertNotNull(event);
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+            final Map<String, Object> eventData = event.getEventData();
+            Assert.assertEquals("getpropositions", eventData.get("requesttype"));
+
+            final List<String> scopesList = (List<String>) eventData.get("surfaces");
+            Assert.assertEquals(1, scopesList.size());
+            Assert.assertEquals("/myView#htmlElement", scopesList.get(0));
+
+            // verify callback response
+            final Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_SURFACE.json"), HashMap.class);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            Assert.assertNotNull(proposition);
+
+            final List<Map<String, Object>> propositionsList = new ArrayList<>();
+            propositionsList.add(proposition.toEventData());
+
+            final Map<String, Object> responseEventData = new HashMap<>();
+            responseEventData.put("propositions", propositionsList);
+            final Event responseEvent = new Event.Builder("Optimize Response", "com.adobe.eventType.optimize", "com.adobe.eventSource.responseContent")
+                    .setEventData(responseEventData).build();
+            callbackWithError.call(responseEvent);
+
+            Assert.assertNull(responseError);
+            Assert.assertNotNull(responseMapForSurface);
+            Assert.assertEquals(1, responseMapForSurface.size());
+            Proposition actualProposition = responseMapForSurface.get("/myView#htmlElement");
+            Assert.assertEquals(proposition, actualProposition);
+        }
+    }
+
+    @Test
+    public void testGetPropositionsForSurfacePaths_multipleValidSurface() {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class);
+             MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            // setup
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+
+            // test
+            Optimize.getPropositionsForSurfacePaths(new ArrayList<String>() {{
+                add("myView/mySubview1");
+                add("myView/mySubview2");
+            }}, new AdobeCallbackWithError<Map<String, Proposition>>() {
+                @Override
+                public void fail(AdobeError adobeError) {
+                    responseError = adobeError;
+                }
+
+                @Override
+                public void call(Map<String, Proposition> propositionsMap) {
+                    responseMapForSurface = propositionsMap;
+                }
+            });
+
+            // verify
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            mobileCoreMockedStatic.verify(() -> MobileCore.dispatchEventWithResponseCallback(eventCaptor.capture(), ArgumentMatchers.anyLong(), ArgumentMatchers.any(AdobeCallbackWithError.class)));
+            final Event event = eventCaptor.getValue();
+            Assert.assertNotNull(event);
+
+            Assert.assertEquals("com.adobe.eventType.optimize", event.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", event.getSource());
+            final Map<String, Object> eventData = event.getEventData();
+            Assert.assertEquals("getpropositions", eventData.get("requesttype"));
+
+            final List<String> scopesList = (List<String>) eventData.get("surfaces");
+            Assert.assertEquals(2, scopesList.size());
+            Assert.assertEquals("myView/mySubview1", scopesList.get(0));
+            Assert.assertEquals("myView/mySubview2", scopesList.get(1));
+        }
+    }
+
+    @Test
+    public void testGetPropositionsForSurfacePaths_invalidSurfaceInList() {
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class);
+             MockedStatic<Base64> base64MockedStatic = Mockito.mockStatic(Base64.class)) {
+            base64MockedStatic.when(() -> Base64.decode(ArgumentMatchers.anyString(), ArgumentMatchers.anyInt()))
+                    .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
+
+            // test
+            Optimize.getPropositionsForSurfacePaths(new ArrayList<String>() {{
+                add("");
+            }}, new AdobeCallbackWithError<Map<String, Proposition>>() {
+                @Override
+                public void fail(AdobeError adobeError) {
+                    responseError = adobeError;
+                }
+
+                @Override
+                public void call(Map<String, Proposition> propositionsMap) {
+                    responseMapForSurface = propositionsMap;
+                }
+            });
+
+            // verify
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+            Assert.assertEquals(AdobeError.UNEXPECTED_ERROR, responseError);
+        }
+    }
+
+    @Test
+    public void testGetPropositionsForSurfacePaths_emptySurfacesList() {
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // test
+            Optimize.getPropositionsForSurfacePaths(new ArrayList<String>(), new AdobeCallbackWithError<Map<String, Proposition>>() {
+                @Override
+                public void fail(AdobeError adobeError) {
+                    responseError = adobeError;
+                }
+
+                @Override
+                public void call(Map<String, Proposition> propositionsMap) {
+                    responseMapForSurface = propositionsMap;
+                }
+            });
+
+            // verify
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+            Assert.assertEquals(AdobeError.UNEXPECTED_ERROR, responseError);
+        }
+    }
+
+    @Test
+    public void testGetPropositionsForSurfacePaths_nullSurfaceList() {
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class)) {
+            // test
+            Optimize.getPropositionsForSurfacePaths(null, new AdobeCallbackWithError<Map<String, Proposition>>() {
+                @Override
+                public void fail(AdobeError adobeError) {
+                    responseError = adobeError;
+                }
+
+                @Override
+                public void call(Map<String, Proposition> propositionsMap) {
+                    responseMapForSurface = propositionsMap;
+                }
+            });
+
+            // verify
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+            Assert.assertEquals(AdobeError.UNEXPECTED_ERROR, responseError);
+        }
+    }
+
+    @Test
     public void testOnPropositionsUpdate_validProposition() throws Exception {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
@@ -568,6 +901,121 @@ public class OptimizeTests {
                 @Override
                 public void call(final Map<DecisionScope, Proposition> propositionsMap) {
                     responseMap = propositionsMap;
+                }
+            });
+
+            //verify
+            final ArgumentCaptor<AdobeCallbackWithError<Event>> callbackCaptor = ArgumentCaptor.forClass(AdobeCallbackWithError.class);
+            mobileCoreMockedStatic.verify(() -> MobileCore.registerEventListener(ArgumentMatchers.eq("com.adobe.eventType.optimize"), ArgumentMatchers.eq("com.adobe.eventSource.notification"),
+                    callbackCaptor.capture()));
+            final AdobeCallbackWithError<Event> callbackWithError = callbackCaptor.getValue();
+
+            final List<Map<String, Object>> propositionsList = new ArrayList<>();
+            propositionsList.add(null);
+
+            final Map<String, Object> eventData = new HashMap<>();
+            eventData.put("propositions", propositionsList);
+            final Event event = new Event.Builder("Optimize Notification", "com.adobe.eventType.optimize", "com.adobe.eventSource.notification")
+                    .setEventData(eventData).build();
+            callbackWithError.call(event);
+
+            Assert.assertNull(responseError);
+            Assert.assertNull(responseMap);
+        }
+    }
+
+    @Test
+    public void testOnPropositionsUpdateForSurfaces_validProposition() throws Exception {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // test
+            Optimize.onPropositionsUpdateForSurfaces(new AdobeCallbackWithError<Map<String, Proposition>>() {
+                @Override
+                public void fail(final AdobeError adobeError) {
+                    responseError = adobeError;
+                }
+
+                @Override
+                public void call(final Map<String, Proposition> propositionsMap) {
+                    responseMapForSurface = propositionsMap;
+                }
+            });
+
+            //verify
+            final ArgumentCaptor<AdobeCallbackWithError<Event>> callbackCaptor = ArgumentCaptor.forClass(AdobeCallbackWithError.class);
+            mobileCoreMockedStatic.verify(() -> MobileCore.registerEventListener(ArgumentMatchers.eq("com.adobe.eventType.optimize"), ArgumentMatchers.eq("com.adobe.eventSource.notification"),
+                    callbackCaptor.capture()));
+            final AdobeCallbackWithError<Event> callbackWithError = callbackCaptor.getValue();
+
+            final Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_SURFACE.json"), HashMap.class);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            Assert.assertNotNull(proposition);
+
+            final List<Map<String, Object>> propositionsList = new ArrayList<>();
+            propositionsList.add(proposition.toEventData());
+
+            final Map<String, Object> eventData = new HashMap<>();
+            eventData.put("propositions", propositionsList);
+            final Event event = new Event.Builder("Optimize Notification", "com.adobe.eventType.optimize", "com.adobe.eventSource.notification")
+                    .setEventData(eventData).build();
+            callbackWithError.call(event);
+
+            Assert.assertNull(responseError);
+            Assert.assertNotNull(responseMapForSurface);
+            Assert.assertEquals(1, responseMapForSurface.size());
+            Proposition actualProposition = responseMapForSurface.get("/myView#htmlElement");
+            Assert.assertEquals(proposition, actualProposition);
+        }
+    }
+
+    @Test
+    public void testOnPropositionsUpdateForSurfaces_emptyPropositionData() {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // test
+            Optimize.onPropositionsUpdateForSurfaces(new AdobeCallbackWithError<Map<String, Proposition>>() {
+                @Override
+                public void fail(final AdobeError adobeError) {
+                    responseError = adobeError;
+                }
+
+                @Override
+                public void call(final Map<String, Proposition> propositionsMap) {
+                    responseMapForSurface = propositionsMap;
+                }
+            });
+
+            //verify
+            final ArgumentCaptor<AdobeCallbackWithError<Event>> callbackCaptor = ArgumentCaptor.forClass(AdobeCallbackWithError.class);
+            mobileCoreMockedStatic.verify(() -> MobileCore.registerEventListener(ArgumentMatchers.eq("com.adobe.eventType.optimize"), ArgumentMatchers.eq("com.adobe.eventSource.notification"),
+                    callbackCaptor.capture()));
+            final AdobeCallbackWithError<Event> callbackWithError = callbackCaptor.getValue();
+
+            final List<Map<String, Object>> propositionsList = new ArrayList<>();
+            propositionsList.add(new HashMap<>());
+
+            final Map<String, Object> eventData = new HashMap<>();
+            eventData.put("propositions", propositionsList);
+            final Event event = new Event.Builder("Optimize Notification", "com.adobe.eventType.optimize", "com.adobe.eventSource.notification")
+                    .setEventData(eventData).build();
+            callbackWithError.call(event);
+
+            Assert.assertNull(responseError);
+            Assert.assertNull(responseMap);
+        }
+    }
+
+    @Test
+    public void testOnPropositionsUpdateForSurfaces_nullPropositionData() {
+        try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
+            // test
+            Optimize.onPropositionsUpdateForSurfaces(new AdobeCallbackWithError<Map<String, Proposition>>() {
+                @Override
+                public void fail(final AdobeError adobeError) {
+                    responseError = adobeError;
+                }
+
+                @Override
+                public void call(final Map<String, Proposition> propositionsMap) {
+                    responseMapForSurface = propositionsMap;
                 }
             });
 

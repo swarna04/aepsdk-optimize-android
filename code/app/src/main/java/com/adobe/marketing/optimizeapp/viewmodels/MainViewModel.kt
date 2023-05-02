@@ -25,6 +25,10 @@ class MainViewModel: ViewModel() {
 
     //Settings textField Values
     var textAssuranceUrl by mutableStateOf("")
+
+    var textSurfaceHtml by mutableStateOf("")
+    var textSurfaceJson by mutableStateOf("")
+
     var textOdeText by mutableStateOf("")
     var textOdeImage by mutableStateOf("")
     var textOdeHtml by mutableStateOf("")
@@ -54,8 +58,21 @@ class MainViewModel: ViewModel() {
         }
     }
 
+    private val propositionsUpdateForSurfacesCallback = object : AdobeCallbackWithError<Map<String, Proposition>> {
+        override fun call(propositions: Map<String, Proposition>?) {
+            propositions?.forEach {
+                propositionStateMap[it.key] = it.value
+            }
+        }
+
+        override fun fail(error: AdobeError?) {
+            print("Error in updating Proposition:: ${error?.errorName ?: "Undefined"}.")
+        }
+    }
+
     init {
         Optimize.onPropositionsUpdate(propositionUpdateCallback)
+        Optimize.onPropositionsUpdateForSurfaces(propositionsUpdateForSurfacesCallback)
     }
 
     //Begin: Calls to Optimize SDK APIs
@@ -87,6 +104,27 @@ class MainViewModel: ViewModel() {
     }
 
     /**
+     * Calls the Optimize SDK API to get the Propositions see [Optimize.getPropositions]
+     *
+     * @param [decisionScopes] a [List] of [DecisionScope]
+     */
+    fun getPropositionsForSurfacePaths(surfaceList: List<String>) {
+        propositionStateMap.clear()
+        Optimize.getPropositionsForSurfacePaths(surfaceList, object: AdobeCallbackWithError<Map<String, Proposition>>{
+            override fun call(propositions: Map<String, Proposition>?) {
+                propositions?.forEach {
+                    propositionStateMap[it.key] = it.value
+                }
+            }
+
+            override fun fail(error: AdobeError?) {
+                print("Error in getting Propositions.")
+            }
+
+        })
+    }
+
+    /**
      * Calls the Optimize SDK API to update Propositions see [Optimize.updatePropositions]
      *
      * @param decisionScopes a [List] of [DecisionScope]
@@ -99,6 +137,18 @@ class MainViewModel: ViewModel() {
     }
 
     /**
+     * Calls the Optimize SDK API to update Propositions see [Optimize.updatePropositionsForSurfacePaths]
+     *
+     * @param surfaceList a [List] of [String] surfaces
+     * @param xdm a [Map] of xdm params
+     * @param data a [Map] of data
+     */
+    fun updatePropositionsForSuracePaths(surfaceList: List<String> , xdm: Map<String, String> , data: Map<String, Any>) {
+        propositionStateMap.clear()
+        Optimize.updatePropositionsForSurfacePaths(surfaceList, xdm, data)
+    }
+
+    /**
      * Calls the Optimize SDK API to clear the cached Propositions [Optimize.clearCachedPropositions]
      */
     fun clearCachedPropositions() {
@@ -108,7 +158,8 @@ class MainViewModel: ViewModel() {
 
     //End: Calls to Optimize SDK API's
 
-
+    var htmlSurfaceString: String? = null
+    var jsonSurfaceString: String? = null
     var textDecisionScope: DecisionScope? = null
     var imageDecisionScope: DecisionScope? = null
     var htmlDecisionScope: DecisionScope? = null
@@ -116,6 +167,8 @@ class MainViewModel: ViewModel() {
     var targetMboxDecisionScope: DecisionScope? = null
 
     fun updateDecisionScopes() {
+        htmlSurfaceString = textSurfaceHtml
+        jsonSurfaceString = textSurfaceJson
         textDecisionScope = DecisionScope(textOdeText)
         imageDecisionScope = DecisionScope(textOdeImage)
         htmlDecisionScope = DecisionScope(textOdeHtml)

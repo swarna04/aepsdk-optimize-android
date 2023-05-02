@@ -54,6 +54,11 @@ fun SettingsView(viewModel: MainViewModel) {
                 Text(text = "Start Assurance Session", textAlign = TextAlign.Start, style = MaterialTheme.typography.button)
             }
 
+            // Optimize Surface
+            SettingsLabel(text = "Optimize-Surfaces", align = TextAlign.Start, textStyle = MaterialTheme.typography.subtitle1)
+            SettingsTextField(value = viewModel.textSurfaceHtml, placeholder = "Enter Surface fragment (HTML)") { viewModel.textSurfaceHtml = it }
+            SettingsTextField(value = viewModel.textSurfaceJson, placeholder = "Enter Surface fragment (JSON)") { viewModel.textSurfaceJson = it }
+
             // Optimize OD
             SettingsLabel(text = "Optimize-OD", align = TextAlign.Start, textStyle = MaterialTheme.typography.subtitle1)
             SettingsTextField(value = viewModel.textOdeText, placeholder = "Enter Encoded Decision Scope (Text)") { viewModel.textOdeText = it }

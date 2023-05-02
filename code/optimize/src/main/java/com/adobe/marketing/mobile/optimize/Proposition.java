@@ -41,7 +41,14 @@ public class Proposition {
      */
     Proposition(final String id, final List<Offer> offers, final String scope, final Map<String, Object> scopeDetails) {
         this.id = id != null ? id : "";
-        this.scope = scope != null ? scope : "";
+
+        final String mobileAppSurface = OptimizeUtils.getMobileAppSurface();
+        if (!OptimizeUtils.isNullOrEmpty(mobileAppSurface) && scope.startsWith(mobileAppSurface)) {
+            this.scope = scope.substring(mobileAppSurface.length()+1);
+        } else {
+            this.scope = scope != null ? scope : "";
+        }
+
         this.scopeDetails = scopeDetails != null ? scopeDetails : new HashMap<>();
 
         this.offers = offers != null ? offers : new ArrayList<>();

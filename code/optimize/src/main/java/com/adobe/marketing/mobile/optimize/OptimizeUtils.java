@@ -15,8 +15,13 @@ package com.adobe.marketing.mobile.optimize;
 import android.util.Base64;
 
 import com.adobe.marketing.mobile.AdobeError;
+import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.util.StringUtils;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -116,5 +121,65 @@ class OptimizeUtils {
                 error = AdobeError.UNEXPECTED_ERROR;
         }
         return error;
+    }
+
+    /**
+     * Returns the mobile app surface
+     *
+     * @return {@link String} containing the mobile app surface
+     */
+    static String getMobileAppSurface() {
+        final String appSurface = ServiceProvider.getInstance().getDeviceInfoService().getApplicationPackageName();
+        if (OptimizeUtils.isNullOrEmpty(appSurface)) {
+            return null;
+        }
+        return OptimizeConstants.SURFACE_BASE + appSurface;
+    }
+
+    /**
+     * Return surface prefixed with mobile app surface
+     *
+     * @param surface {@link String} the surface name
+     * @return {@link String} surface prefixed with mobile app surface if valid, or null otherwise
+     */
+    static String getPrefixSurface(final String surface) {
+        if (OptimizeUtils.isNullOrEmpty(surface)) {
+            return null;
+        }
+
+        final String mobileAppSurface = getMobileAppSurface();
+        if (OptimizeUtils.isNullOrEmpty(mobileAppSurface)) {
+            return null;
+        }
+
+        return mobileAppSurface + "/" + surface;
+    }
+
+    /**
+     * Check if given event is a Personalization Decision Response Event
+     * @param event instance of {@link Event}
+     * @return true if event is a Personalization Decision Response event, false otherwise
+     */
+    static boolean isPersonalizationDecisionResponse(final Event event) {
+        return OptimizeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
+                OptimizeConstants.EventSource.EDGE_PERSONALIZATION_DECISIONS.equalsIgnoreCase(event.getSource());
+    }
+
+    /**
+     * Checks if provided string is a valid URI
+     * @param stringUri {@link String} input string
+     * @return true if inputted string is a valid URI, false otherwise
+     */
+    static boolean isValidUri(final String stringUri) {
+        if (StringUtils.isNullOrEmpty(stringUri)) {
+            return false;
+        } else {
+            try {
+                new URI(stringUri);
+                return true;
+            } catch (URISyntaxException var2) {
+                return false;
+            }
+        }
     }
 }

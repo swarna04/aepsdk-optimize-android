@@ -12,6 +12,8 @@
 
 package com.adobe.marketing.mobile.optimize;
 
+import static org.mockito.Mockito.when;
+
 import android.util.Base64;
 
 import com.adobe.marketing.mobile.AdobeError;
@@ -21,7 +23,9 @@ import com.adobe.marketing.mobile.ExtensionEventListener;
 import com.adobe.marketing.mobile.SharedStateResolution;
 import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.SharedStateStatus;
+import com.adobe.marketing.mobile.services.DeviceInforming;
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.Assert;
@@ -49,6 +53,10 @@ public class OptimizeExtensionTests {
     // Mocks
     @Mock
     ExtensionApi mockExtensionApi;
+
+    @Mock private ServiceProvider mockServiceProvider;
+
+    @Mock private DeviceInforming mockDeviceInfoService;
 
     @Before
     public void setup() {
@@ -561,7 +569,7 @@ public class OptimizeExtensionTests {
 
             // verify
             Mockito.verify(mockExtensionApi, Mockito.times(0)).dispatch(ArgumentMatchers.any());
-            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()), Mockito.times(2));
+            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()), Mockito.times(1));
         }
     }
 
@@ -667,6 +675,381 @@ public class OptimizeExtensionTests {
             Assert.assertNull(datasetId);
         }
     }
+    @Test
+    public void testHandleOptimizeRequestContent_HandleUpdatePropositions_validSurface() {
+        // setup
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                }
+            });
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "updatepropositions");
+            testEventData.put("surfaces", new ArrayList<String>() {
+                {
+                    add("myView#htmlElement");
+                }
+            });
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+            final Event testEvent = new Event.Builder("Optimize Update Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(1)).dispatch(eventCaptor.capture());
+
+            final Event dispatchedEvent = eventCaptor.getValue();
+            Assert.assertEquals("com.adobe.eventType.edge", dispatchedEvent.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", dispatchedEvent.getSource());
+
+            final Map<String, Object> query = (Map<String, Object>) dispatchedEvent.getEventData().get("query");
+            Assert.assertNotNull(query);
+            final Map<String, Object> queryPersonalization = (Map<String, Object>) query.get("personalization");
+            Assert.assertNotNull(queryPersonalization);
+            final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
+            Assert.assertNotNull(schemas);
+            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
+            final List<String> surfaces = (List<String>) queryPersonalization.get("surfaces");
+            Assert.assertNotNull(surfaces);
+            Assert.assertEquals(1, surfaces.size());
+            Assert.assertEquals("mobileapp://com.android.test.package/myView#htmlElement", surfaces.get(0));
+
+            final Map<String, Object> xdm = (Map<String, Object>) dispatchedEvent.getEventData().get("xdm");
+            Assert.assertNotNull(xdm);
+            Assert.assertEquals(1, xdm.size());
+            Assert.assertEquals("personalization.request", xdm.get("eventType"));
+
+            final Map<String, Object> data = (Map<String, Object>) dispatchedEvent.getEventData().get("data");
+            Assert.assertNull(data);
+
+            final String datasetId = (String) dispatchedEvent.getEventData().get("datasetId");
+            Assert.assertNull(datasetId);
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_HandleUpdatePropositions_validSurfaceWithXdmAndDataAndDatasetId() {
+        // setup
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                    put("optimize.datasetId", "111111111111111111111111");
+                }
+            });
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "updatepropositions");
+            testEventData.put("surfaces", new ArrayList<String>() {
+                {
+                    add("myView#featureJson");
+                }
+            });
+            testEventData.put("xdm", new HashMap<String, Object>() {
+                {
+                    put("myXdmKey", "myXdmValue");
+                }
+            });
+            testEventData.put("data", new HashMap<String, Object>() {
+                {
+                    put("myKey", "myValue");
+                }
+            });
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+            final Event testEvent = new Event.Builder("Optimize Update Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(1)).dispatch(eventCaptor.capture());
+
+            final Event dispatchedEvent = eventCaptor.getValue();
+            Assert.assertEquals("com.adobe.eventType.edge", dispatchedEvent.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", dispatchedEvent.getSource());
+
+            final Map<String, Object> query = (Map<String, Object>) dispatchedEvent.getEventData().get("query");
+            Assert.assertNotNull(query);
+            final Map<String, Object> queryPersonalization = (Map<String, Object>) query.get("personalization");
+            Assert.assertNotNull(queryPersonalization);
+            final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
+            Assert.assertNotNull(schemas);
+            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
+            final List<String> surfaces = (List<String>) queryPersonalization.get("surfaces");
+            Assert.assertNotNull(surfaces);
+            Assert.assertEquals(1, surfaces.size());
+            Assert.assertEquals("mobileapp://com.android.test.package/myView#featureJson", surfaces.get(0));
+
+            final Map<String, Object> xdm = (Map<String, Object>) dispatchedEvent.getEventData().get("xdm");
+            Assert.assertNotNull(xdm);
+            Assert.assertEquals(2, xdm.size());
+            Assert.assertEquals("personalization.request", xdm.get("eventType"));
+            Assert.assertEquals("myXdmValue", xdm.get("myXdmKey"));
+
+            final Map<String, Object> data = (Map<String, Object>) dispatchedEvent.getEventData().get("data");
+            Assert.assertNotNull(data);
+            Assert.assertEquals(1, data.size());
+            Assert.assertEquals("myValue", data.get("myKey"));
+
+            final String datasetId = (String) dispatchedEvent.getEventData().get("datasetId");
+            Assert.assertEquals("111111111111111111111111", datasetId);
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_HandleUpdatePropositions_multipleValidSurfaces() {
+        // setup
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                }
+            });
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "updatepropositions");
+            testEventData.put("surfaces", new ArrayList<String>() {
+                {
+                    add("myView/mySubview1");
+                    add("myView/mySubview2");
+                }
+            });
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+            final Event testEvent = new Event.Builder("Optimize Update Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(1)).dispatch(eventCaptor.capture());
+
+            final Event dispatchedEvent = eventCaptor.getValue();
+            Assert.assertEquals("com.adobe.eventType.edge", dispatchedEvent.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", dispatchedEvent.getSource());
+
+            final Map<String, Object> query = (Map<String, Object>) dispatchedEvent.getEventData().get("query");
+            Assert.assertNotNull(query);
+            final Map<String, Object> queryPersonalization = (Map<String, Object>) query.get("personalization");
+            Assert.assertNotNull(queryPersonalization);
+            final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
+            Assert.assertNotNull(schemas);
+            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
+            final List<String> surfaces = (List<String>) queryPersonalization.get("surfaces");
+            Assert.assertNotNull(surfaces);
+            Assert.assertEquals(2, surfaces.size());
+            Assert.assertEquals("mobileapp://com.android.test.package/myView/mySubview1", surfaces.get(0));
+            Assert.assertEquals("mobileapp://com.android.test.package/myView/mySubview2", surfaces.get(1));
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_UpdatePropositions_configurationNotAvailable_ValidSurface() {
+        // setup
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class);
+             MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "updatepropositions");
+            testEventData.put("surfaces", new ArrayList<String>() {
+                {
+                    add("myView#featureJson");
+                }
+            });
+
+            final Event testEvent = new Event.Builder("Optimize Update Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(0)).dispatch(ArgumentMatchers.any());
+            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_HandleUpdatePropositions_noSurface() {
+        // setup
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class);
+             MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                }
+            });
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "updatepropositions");
+            testEventData.put("surfaces", new ArrayList<String>());
+
+            final Event testEvent = new Event.Builder("Optimize Update Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(0)).dispatch(ArgumentMatchers.any());
+            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()), Mockito.times(1));
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_HandleUpdatePropositions_invalidSurface() {
+        // setup
+        try (MockedStatic<Log> logMockedStatic = Mockito.mockStatic(Log.class);
+             MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                }
+            });
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "updatepropositions");
+            testEventData.put("surfaces", new ArrayList<String>() {
+                {
+                    add("/myView/mySubviews/\\\\*/home.html");
+                }
+            });
+
+            final Event testEvent = new Event.Builder("Optimize Update Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(0)).dispatch(ArgumentMatchers.any());
+            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()), Mockito.times(1));
+            logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()), Mockito.times(1));
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_HandleUpdatePropositions_validAndInvalidSurface() {
+        // setup
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                }
+            });
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "updatepropositions");
+            testEventData.put("surfaces", new ArrayList<String>() {
+                {
+                    add("myView#htmlElement");
+                    add("myView/mySubviews/[0-9]{2,6}$");
+                }
+            });
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+            final Event testEvent = new Event.Builder("Optimize Update Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(1)).dispatch(eventCaptor.capture());
+
+            final Event dispatchedEvent = eventCaptor.getValue();
+            Assert.assertEquals("com.adobe.eventType.edge", dispatchedEvent.getType());
+            Assert.assertEquals("com.adobe.eventSource.requestContent", dispatchedEvent.getSource());
+
+            final Map<String, Object> query = (Map<String, Object>) dispatchedEvent.getEventData().get("query");
+            Assert.assertNotNull(query);
+            final Map<String, Object> queryPersonalization = (Map<String, Object>) query.get("personalization");
+            Assert.assertNotNull(queryPersonalization);
+            final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
+            Assert.assertNotNull(schemas);
+            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
+            final List<String> surfaces = (List<String>) queryPersonalization.get("surfaces");
+            Assert.assertNotNull(surfaces);
+            Assert.assertEquals(1, surfaces.size());
+            Assert.assertEquals("mobileapp://com.android.test.package/myView#htmlElement", surfaces.get(0));
+        }
+    }
 
     @Test
     public void testHandleEdgeResponse_validProposition() throws Exception{
@@ -677,6 +1060,7 @@ public class OptimizeExtensionTests {
                 .build();
 
         final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+        extension.setPersonalizationRequestEventId((String) testEvent.getEventData().get("requestEventId"));
 
         // test
         extension.handleEdgeResponse(testEvent);
@@ -712,11 +1096,10 @@ public class OptimizeExtensionTests {
         Assert.assertEquals("true", offer.getCharacteristics().get("testing"));
         Assert.assertNull(offer.getLanguage());
 
-        final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+        final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
         Assert.assertNotNull(cachedPropositions);
         Assert.assertEquals(1, cachedPropositions.size());
-        final DecisionScope cachedScope = new DecisionScope("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==");
-        Assert.assertEquals(proposition, cachedPropositions.get(cachedScope));
+        Assert.assertEquals(proposition, cachedPropositions.get("eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ=="));
     }
 
     @Test
@@ -728,6 +1111,7 @@ public class OptimizeExtensionTests {
                 .build();
 
         final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+        extension.setPersonalizationRequestEventId((String) testEvent.getEventData().get("requestEventId"));
 
         // test
         extension.handleEdgeResponse(testEvent);
@@ -801,11 +1185,71 @@ public class OptimizeExtensionTests {
         Assert.assertNull(offer.getCharacteristics());
         Assert.assertNull(offer.getLanguage());
 
-        final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+        final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
         Assert.assertNotNull(cachedPropositions);
         Assert.assertEquals(1, cachedPropositions.size());
-        final DecisionScope cachedScope = new DecisionScope("myMbox");
-        Assert.assertEquals(proposition, cachedPropositions.get(cachedScope));
+        Assert.assertEquals(proposition, cachedPropositions.get("myMbox"));
+    }
+
+    @Test
+    public void testHandleEdgeResponse_validPropositionForSurface() throws Exception{
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            final Map<String, Object> edgeResponseData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/EVENT_DATA_EDGE_RESPONSE_VALID_SURFACE.json"), HashMap.class);
+            final Event testEvent = new Event.Builder("AEP Response Event Handle", "com.adobe.eventType.edge", "personalization:decisions")
+                    .setEventData(edgeResponseData)
+                    .build();
+
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            extension.setPersonalizationRequestEventId((String) testEvent.getEventData().get("requestEventId"));
+
+            // test
+            extension.handleEdgeResponse(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(1)).dispatch(eventCaptor.capture());
+
+            final Event dispatchedEvent = eventCaptor.getValue();
+            Assert.assertEquals("com.adobe.eventType.optimize", dispatchedEvent.getType());
+            Assert.assertEquals("com.adobe.eventSource.notification", dispatchedEvent.getSource());
+
+            final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) dispatchedEvent.getEventData().get("propositions");
+            Assert.assertNotNull(propositionsList);
+            Assert.assertEquals(1, propositionsList.size());
+
+            final Map<String, Object> propositionsData = propositionsList.get(0);
+            Assert.assertNotNull(propositionsData);
+            final Proposition proposition = Proposition.fromEventData(propositionsData);
+            Assert.assertNotNull(proposition);
+
+            Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
+            Assert.assertEquals("/myView#htmlElement", proposition.getScope());
+            Assert.assertEquals(4, proposition.getScopeDetails().size());
+            Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
+            Assert.assertEquals("AJO", proposition.getScopeDetails().get("decisionProvider"));
+            Map<String, Object> characteristics = (Map<String, Object>) proposition.getScopeDetails().get("characteristics");
+            Assert.assertEquals("someToken", characteristics.get("eventToken"));
+            Map<String, Object> activity = (Map<String, Object>) proposition.getScopeDetails().get("activity");
+            Assert.assertEquals("dddddddd-dddd-dddd-dddd-dddddddddddd#eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", activity.get("id"));
+
+            Assert.assertEquals(1, proposition.getOffers().size());
+            final Offer offer = proposition.getOffers().get(0);
+            Assert.assertEquals("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", offer.getId());
+            Assert.assertEquals("https://ns.adobe.com/personalization/html-content-item", offer.getSchema());
+            Assert.assertEquals(OfferType.UNKNOWN, offer.getType());
+            Assert.assertEquals("<h1>This is a HTML content</h1>", offer.getContent());
+
+            final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
+            Assert.assertNotNull(cachedPropositions);
+            Assert.assertEquals(1, cachedPropositions.size());
+            Assert.assertEquals(proposition, cachedPropositions.get("/myView#htmlElement"));
+        }
     }
 
     @Test
@@ -823,7 +1267,7 @@ public class OptimizeExtensionTests {
             // verify
             logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
 
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
             Assert.assertTrue(cachedPropositions.isEmpty());
         }
@@ -842,9 +1286,9 @@ public class OptimizeExtensionTests {
             extension.handleEdgeResponse(testEvent);
 
             // verify
-            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()), Mockito.times(2));
+            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()), Mockito.times(1));
 
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
             Assert.assertTrue(cachedPropositions.isEmpty());
         }
@@ -865,7 +1309,7 @@ public class OptimizeExtensionTests {
             // verify
             logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()));
 
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
             Assert.assertTrue(cachedPropositions.isEmpty());
         }
@@ -885,7 +1329,7 @@ public class OptimizeExtensionTests {
             // verify
             logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()));
 
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
             Assert.assertTrue(cachedPropositions.isEmpty());
         }
@@ -905,7 +1349,7 @@ public class OptimizeExtensionTests {
             // verify
             logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()));
 
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
             Assert.assertTrue(cachedPropositions.isEmpty());
         }
@@ -926,7 +1370,7 @@ public class OptimizeExtensionTests {
             // verify
             logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()));
 
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
             Assert.assertTrue(cachedPropositions.isEmpty());
         }
@@ -946,7 +1390,7 @@ public class OptimizeExtensionTests {
             // verify
             logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()));
 
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
             Assert.assertTrue(cachedPropositions.isEmpty());
         }
@@ -966,7 +1410,7 @@ public class OptimizeExtensionTests {
             // verify
             logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()));
 
-            final Map<DecisionScope, Proposition> cachedPropositions = extension.getCachedPropositions();
+            final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
             Assert.assertTrue(cachedPropositions.isEmpty());
         }
@@ -987,8 +1431,8 @@ public class OptimizeExtensionTests {
             final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
             final Proposition testProposition = Proposition.fromEventData(testPropositionData);
             Assert.assertNotNull(testProposition);
-            final Map<DecisionScope, Proposition> cachedPropositions = new HashMap<>();
-            cachedPropositions.put(new DecisionScope(testProposition.getScope()), testProposition);
+            final Map<String, Proposition> cachedPropositions = new HashMap<>();
+            cachedPropositions.put(testProposition.getScope(), testProposition);
             extension.setCachedPropositions(cachedPropositions);
 
             final DecisionScope testScope = new DecisionScope("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==");
@@ -1056,8 +1500,8 @@ public class OptimizeExtensionTests {
             final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
             final Proposition testProposition = Proposition.fromEventData(testPropositionData);
             Assert.assertNotNull(testProposition);
-            final Map<DecisionScope, Proposition> cachedPropositions = new HashMap<>();
-            cachedPropositions.put(new DecisionScope(testProposition.getScope()), testProposition);
+            final Map<String, Proposition> cachedPropositions = new HashMap<>();
+            cachedPropositions.put(testProposition.getScope(), testProposition);
             extension.setCachedPropositions(cachedPropositions);
 
             final DecisionScope testScope1 = new DecisionScope("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==");
@@ -1128,8 +1572,8 @@ public class OptimizeExtensionTests {
             final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
             final Proposition testProposition = Proposition.fromEventData(testPropositionData);
             Assert.assertNotNull(testProposition);
-            final Map<DecisionScope, Proposition> cachedPropositions = new HashMap<>();
-            cachedPropositions.put(new DecisionScope(testProposition.getScope()), testProposition);
+            final Map<String, Proposition> cachedPropositions = new HashMap<>();
+            cachedPropositions.put(testProposition.getScope(), testProposition);
             extension.setCachedPropositions(cachedPropositions);
 
             final DecisionScope testScope1 = new DecisionScope("myMbox1");
@@ -1181,8 +1625,8 @@ public class OptimizeExtensionTests {
             final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
             final Proposition testProposition = Proposition.fromEventData(testPropositionData);
             Assert.assertNotNull(testProposition);
-            final Map<DecisionScope, Proposition> cachedPropositions = new HashMap<>();
-            cachedPropositions.put(new DecisionScope(testProposition.getScope()), testProposition);
+            final Map<String, Proposition> cachedPropositions = new HashMap<>();
+            cachedPropositions.put(testProposition.getScope(), testProposition);
             extension.setCachedPropositions(cachedPropositions);
 
             final Map<String, Object> testEventData = new HashMap<>();
@@ -1225,7 +1669,7 @@ public class OptimizeExtensionTests {
                 }
             });
 
-            final Map<DecisionScope, Proposition> cachedPropositions = new HashMap<>();
+            final Map<String, Proposition> cachedPropositions = new HashMap<>();
             extension.setCachedPropositions(cachedPropositions);
 
             final DecisionScope testScope = new DecisionScope("eydhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==");
@@ -1256,6 +1700,261 @@ public class OptimizeExtensionTests {
             final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) dispatchedEvent.getEventData().get("propositions");
             Assert.assertNotNull(propositionsList);
             Assert.assertEquals(0, propositionsList.size());
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_HandleGetPropositions_surfaceInCache() throws Exception{
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                }
+            });
+
+            final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_SURFACE.json"), HashMap.class);
+            final Proposition testProposition = Proposition.fromEventData(testPropositionData);
+            Assert.assertNotNull(testProposition);
+            final Map<String, Proposition> cachedPropositions = new HashMap<>();
+            cachedPropositions.put(testProposition.getScope(), testProposition);
+            extension.setCachedPropositions(cachedPropositions);
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "getpropositions");
+            testEventData.put("surfaces", new ArrayList<String>() {
+                {
+                    add("/myView#htmlElement");
+                }
+            });
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+            final Event testEvent = new Event.Builder("Optimize Get Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(1)).dispatch(eventCaptor.capture());
+
+            final Event dispatchedEvent = eventCaptor.getValue();
+            Assert.assertEquals("com.adobe.eventType.optimize", dispatchedEvent.getType());
+            Assert.assertEquals("com.adobe.eventSource.responseContent", dispatchedEvent.getSource());
+            Assert.assertEquals(testEvent.getUniqueIdentifier(), dispatchedEvent.getResponseID());
+
+            final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) dispatchedEvent.getEventData().get("propositions");
+            Assert.assertNotNull(propositionsList);
+            Assert.assertEquals(1, propositionsList.size());
+
+            final Map<String, Object> propositionData = propositionsList.get(0);
+            Assert.assertNotNull(propositionData);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            Assert.assertNotNull(proposition);
+
+            Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
+            Assert.assertEquals("/myView#htmlElement", proposition.getScope());
+            Assert.assertEquals(4, proposition.getScopeDetails().size());
+            Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
+            Assert.assertEquals("AJO", proposition.getScopeDetails().get("decisionProvider"));
+            Map<String, Object> characteristics = (Map<String, Object>) proposition.getScopeDetails().get("characteristics");
+            Assert.assertEquals("someToken", characteristics.get("eventToken"));
+            Map<String, Object> activity = (Map<String, Object>) proposition.getScopeDetails().get("activity");
+            Assert.assertEquals("dddddddd-dddd-dddd-dddd-dddddddddddd#eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", activity.get("id"));
+
+            Assert.assertEquals(1, proposition.getOffers().size());
+            final Offer offer = proposition.getOffers().get(0);
+            Assert.assertEquals("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", offer.getId());
+            Assert.assertEquals("https://ns.adobe.com/personalization/html-content-item", offer.getSchema());
+            Assert.assertEquals(OfferType.UNKNOWN, offer.getType());
+            Assert.assertEquals("<h1>This is a HTML content</h1>", offer.getContent());
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_HandleGetPropositions_notAllSurfacesInCache() throws Exception{
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                }
+            });
+
+            final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_SURFACE.json"), HashMap.class);
+            final Proposition testProposition = Proposition.fromEventData(testPropositionData);
+            Assert.assertNotNull(testProposition);
+            final Map<String, Proposition> cachedPropositions = new HashMap<>();
+            cachedPropositions.put(testProposition.getScope(), testProposition);
+            extension.setCachedPropositions(cachedPropositions);
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "getpropositions");
+            testEventData.put("surfaces", new ArrayList<String>() {
+                {
+                    add("/myView#htmlElement");
+                    add("/myView#jsonElement");
+                }
+            });
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+            final Event testEvent = new Event.Builder("Optimize Get Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(1)).dispatch(eventCaptor.capture());
+
+            final Event dispatchedEvent = eventCaptor.getValue();
+            Assert.assertEquals("com.adobe.eventType.optimize", dispatchedEvent.getType());
+            Assert.assertEquals("com.adobe.eventSource.responseContent", dispatchedEvent.getSource());
+            Assert.assertEquals(testEvent.getUniqueIdentifier(), dispatchedEvent.getResponseID());
+
+            final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) dispatchedEvent.getEventData().get("propositions");
+            Assert.assertNotNull(propositionsList);
+            Assert.assertEquals(1, propositionsList.size());
+
+            final Map<String, Object> propositionData = propositionsList.get(0);
+            Assert.assertNotNull(propositionData);
+            final Proposition proposition = Proposition.fromEventData(propositionData);
+            Assert.assertNotNull(proposition);
+
+            Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
+            Assert.assertEquals("/myView#htmlElement", proposition.getScope());
+            Assert.assertEquals(4, proposition.getScopeDetails().size());
+            Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
+            Assert.assertEquals("AJO", proposition.getScopeDetails().get("decisionProvider"));
+            Map<String, Object> characteristics = (Map<String, Object>) proposition.getScopeDetails().get("characteristics");
+            Assert.assertEquals("someToken", characteristics.get("eventToken"));
+            Map<String, Object> activity = (Map<String, Object>) proposition.getScopeDetails().get("activity");
+            Assert.assertEquals("dddddddd-dddd-dddd-dddd-dddddddddddd#eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", activity.get("id"));
+
+            Assert.assertEquals(1, proposition.getOffers().size());
+            final Offer offer = proposition.getOffers().get(0);
+            Assert.assertEquals("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", offer.getId());
+            Assert.assertEquals("https://ns.adobe.com/personalization/html-content-item", offer.getSchema());
+            Assert.assertEquals(OfferType.UNKNOWN, offer.getType());
+            Assert.assertEquals("<h1>This is a HTML content</h1>", offer.getContent());
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_HandleGetPropositions_noSurfaceInCache() throws Exception{
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                }
+            });
+
+            final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_SURFACE.json"), HashMap.class);
+            final Proposition testProposition = Proposition.fromEventData(testPropositionData);
+            Assert.assertNotNull(testProposition);
+            final Map<String, Proposition> cachedPropositions = new HashMap<>();
+            cachedPropositions.put(testProposition.getScope(), testProposition);
+            extension.setCachedPropositions(cachedPropositions);
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "getpropositions");
+            testEventData.put("surfaces", new ArrayList<String>() {
+                {
+                    add("/myView#jsonElement1");
+                    add("/myView#jsonElement2");
+                }
+            });
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+            final Event testEvent = new Event.Builder("Optimize Get Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(1)).dispatch(eventCaptor.capture());
+
+            final Event dispatchedEvent = eventCaptor.getValue();
+            Assert.assertEquals("com.adobe.eventType.optimize", dispatchedEvent.getType());
+            Assert.assertEquals("com.adobe.eventSource.responseContent", dispatchedEvent.getSource());
+
+            final List<Map<String, Object>> propositionsList = (List<Map<String, Object>>) dispatchedEvent.getEventData().get("propositions");
+            Assert.assertNotNull(propositionsList);
+            Assert.assertEquals(0, propositionsList.size());
+        }
+    }
+
+    @Test
+    public void testHandleOptimizeRequestContent_HandleGetPropositions_emptySurfacesArray() throws Exception{
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            // setup
+            setConfigurationSharedState(new HashMap<String, Object>() {
+                {
+                    put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
+                }
+            });
+
+            final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_SURFACE.json"), HashMap.class);
+            final Proposition testProposition = Proposition.fromEventData(testPropositionData);
+            Assert.assertNotNull(testProposition);
+            final Map<String, Proposition> cachedPropositions = new HashMap<>();
+            cachedPropositions.put(testProposition.getScope(), testProposition);
+            extension.setCachedPropositions(cachedPropositions);
+
+            final Map<String, Object> testEventData = new HashMap<>();
+            testEventData.put("requesttype", "getpropositions");
+            testEventData.put("surfaces", new ArrayList<String>());
+            final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+
+            final Event testEvent = new Event.Builder("Optimize Get Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestContent")
+                    .setEventData(testEventData)
+                    .build();
+
+            // test
+            extension.handleOptimizeRequestContent(testEvent);
+
+            // verify
+            Mockito.verify(mockExtensionApi, Mockito.times(1)).dispatch(eventCaptor.capture());
+
+            final Event dispatchedEvent = eventCaptor.getValue();
+            Assert.assertEquals("com.adobe.eventType.optimize", dispatchedEvent.getType());
+            Assert.assertEquals("com.adobe.eventSource.responseContent", dispatchedEvent.getSource());
+            Assert.assertEquals(AdobeError.UNEXPECTED_ERROR.getErrorCode(), dispatchedEvent.getEventData().get("responseerror"));
+
+            Assert.assertNull(dispatchedEvent.getEventData().get("propositions"));
         }
     }
 
@@ -1504,8 +2203,8 @@ public class OptimizeExtensionTests {
         final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
         final Proposition testProposition = Proposition.fromEventData(testPropositionData);
         Assert.assertNotNull(testProposition);
-        final Map<DecisionScope, Proposition> cachedPropositions = new HashMap<>();
-        cachedPropositions.put(new DecisionScope(testProposition.getScope()), testProposition);
+        final Map<String, Proposition> cachedPropositions = new HashMap<>();
+        cachedPropositions.put(testProposition.getScope(), testProposition);
         extension.setCachedPropositions(cachedPropositions);
 
         final Event testEvent = new Event.Builder("Optimize Clear Propositions Request", "com.adobe.eventType.optimize", "com.adobe.eventSource.requestReset")
@@ -1515,7 +2214,7 @@ public class OptimizeExtensionTests {
         extension.handleClearPropositions(testEvent);
 
         // verify
-        final Map<DecisionScope, Proposition> actualCachedPropositions = extension.getCachedPropositions();
+        final Map<String, Proposition> actualCachedPropositions = extension.getCachedPropositions();
         Assert.assertTrue(actualCachedPropositions.isEmpty());
     }
 
@@ -1525,8 +2224,8 @@ public class OptimizeExtensionTests {
         final Map<String, Object> testPropositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID.json"), HashMap.class);
         final Proposition testProposition = Proposition.fromEventData(testPropositionData);
         Assert.assertNotNull(testProposition);
-        final Map<DecisionScope, Proposition> cachedPropositions = new HashMap<>();
-        cachedPropositions.put(new DecisionScope(testProposition.getScope()), testProposition);
+        final Map<String, Proposition> cachedPropositions = new HashMap<>();
+        cachedPropositions.put(testProposition.getScope(), testProposition);
         extension.setCachedPropositions(cachedPropositions);
 
         final Event testEvent = new Event.Builder("Reset Identities Request", "com.adobe.eventType.generic.identity", "com.adobe.eventSource.requestReset")
@@ -1536,7 +2235,7 @@ public class OptimizeExtensionTests {
         extension.handleClearPropositions(testEvent);
 
         // verify
-        final Map<DecisionScope, Proposition> actualCachedPropositions = extension.getCachedPropositions();
+        final Map<String, Proposition> actualCachedPropositions = extension.getCachedPropositions();
         Assert.assertTrue(actualCachedPropositions.isEmpty());
     }
 

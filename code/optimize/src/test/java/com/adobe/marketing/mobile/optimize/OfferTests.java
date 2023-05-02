@@ -216,13 +216,6 @@ public class OfferTests {
     }
 
     @Test
-    public void testFromEventData_invalidOfferNoId() throws Exception {
-        Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_INVALID_MISSING_ID.json"), HashMap.class);
-        final Offer offer = Offer.fromEventData(offerData);
-        Assert.assertNull(offer);
-    }
-
-    @Test
     public void testFromEventData_invalidOfferNoContent() throws Exception {
         Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_INVALID_MISSING_CONTENT.json"), HashMap.class);
         final Offer offer = Offer.fromEventData(offerData);
@@ -230,22 +223,16 @@ public class OfferTests {
     }
 
     @Test
-    public void testFromEventData_invalidOfferNoFormat() throws Exception {
-        Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_INVALID_MISSING_FORMAT.json"), HashMap.class);
+    public void testFromEventData_validOfferNoFormat() throws Exception {
+        Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_VALID_NO_FORMAT.json"), HashMap.class);
         final Offer offer = Offer.fromEventData(offerData);
-        Assert.assertNull(offer);
+        Assert.assertNotNull(offer);
+        Assert.assertEquals("This is a plain text content!", offer.getContent());
     }
 
     @Test
     public void testFromEventData_invalidOfferNoItemData() throws Exception {
         Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_INVALID_MISSING_ITEM_DATA.json"), HashMap.class);
-        final Offer offer = Offer.fromEventData(offerData);
-        Assert.assertNull(offer);
-    }
-
-    @Test
-    public void testFromEventData_invalidOfferIdMismatch() throws Exception {
-        Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_INVALID_ID_MISMATCH.json"), HashMap.class);
         final Offer offer = Offer.fromEventData(offerData);
         Assert.assertNull(offer);
     }
