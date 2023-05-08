@@ -928,6 +928,7 @@ public class OptimizeTests {
     public void testOnPropositionsUpdateForSurfaces_validProposition() throws Exception {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
+            Optimize.setIsPropositionsListenerRegistered(false);
             Optimize.setPropositionsHandler(new AdobeCallbackWithError<Map<String, Proposition>>() {
                 @Override
                 public void fail(final AdobeError adobeError) {
@@ -971,6 +972,7 @@ public class OptimizeTests {
     public void testOnPropositionsUpdateForSurfaces_emptyPropositionData() {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
+            Optimize.setIsPropositionsListenerRegistered(false);
             Optimize.setPropositionsHandler(new AdobeCallbackWithError<Map<String, Proposition>>() {
                 @Override
                 public void fail(final AdobeError adobeError) {
@@ -1007,6 +1009,7 @@ public class OptimizeTests {
     public void testOnPropositionsUpdateForSurfaces_nullPropositionData() {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
+            Optimize.setIsPropositionsListenerRegistered(false);
             Optimize.setPropositionsHandler(new AdobeCallbackWithError<Map<String, Proposition>>() {
                 @Override
                 public void fail(final AdobeError adobeError) {

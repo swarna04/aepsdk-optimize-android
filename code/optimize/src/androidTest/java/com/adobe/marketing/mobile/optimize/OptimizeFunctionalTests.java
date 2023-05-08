@@ -2177,6 +2177,7 @@ public class OptimizeFunctionalTests {
         updateConfiguration(configData);
 
         //Action
+        Optimize.setIsPropositionsListenerRegistered(false);
         Optimize.setPropositionsHandler(propositionMap -> {
 
             // verify
@@ -2237,6 +2238,7 @@ public class OptimizeFunctionalTests {
         // onPropositionsUpdate should not be called for empty propositions in personalization notification response
         //Action
         CountDownLatch countDownLatch = new CountDownLatch(1);
+        Optimize.setIsPropositionsListenerRegistered(false);
         Optimize.setPropositionsHandler(propositionMap -> {
             countDownLatch.countDown();
         });
@@ -2273,6 +2275,7 @@ public class OptimizeFunctionalTests {
         // onPropositionsUpdate should not be called for null propositions in personalization notification response
         //Action
         CountDownLatch countDownLatch = new CountDownLatch(1);
+        Optimize.setIsPropositionsListenerRegistered(false);
         Optimize.setPropositionsHandler(propositionMap -> {
             countDownLatch.countDown();
         });

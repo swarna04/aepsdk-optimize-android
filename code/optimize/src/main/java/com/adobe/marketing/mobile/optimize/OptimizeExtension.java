@@ -401,7 +401,7 @@ class OptimizeExtension extends Extension {
                 }
             } else if (!OptimizeUtils.isNullOrEmpty(surfaces)) {
                 for (final String surface : surfaces) {
-                    String prefixedSurface = OptimizeUtils.getPrefixedSurface(surface);
+                    final String prefixedSurface = OptimizeUtils.getPrefixedSurface(surface);
                     if (OptimizeUtils.isValidUri(prefixedSurface) && cachedPropositions.containsKey(prefixedSurface)) {
                         final Proposition proposition = cachedPropositions.get(prefixedSurface);
                         if (proposition != null) {

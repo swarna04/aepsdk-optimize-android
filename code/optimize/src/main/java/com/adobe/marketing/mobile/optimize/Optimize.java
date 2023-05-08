@@ -29,6 +29,7 @@ import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 /**
  * Public class containing APIs for the Optimize extension.
@@ -36,6 +37,7 @@ import androidx.annotation.Nullable;
 public class Optimize {
     public final static Class<? extends Extension> EXTENSION = OptimizeExtension.class;
     private static final String SELF_TAG = "Optimize";
+    private static boolean isPropositionsListenerRegistered = false;
 
     private Optimize() {}
 
@@ -421,36 +423,46 @@ public class Optimize {
      * @param callback {@code AdobeCallbackWithError<Map<String, Proposition>>} which will be invoked when decision propositions are received from the Edge network.
      */
     public static void setPropositionsHandler(@NonNull final AdobeCallback<Map<String, Proposition>> callback) {
-        MobileCore.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.NOTIFICATION, new AdobeCallbackWithError<Event>() {
-            @Override
-            public void fail(final AdobeError error) {}
-
-            @Override
-            public void call(final Event event) {
-                final Map<String, Object> eventData = event.getEventData();
-                if (OptimizeUtils.isNullOrEmpty(eventData)) {
-                    return;
+        if(!isPropositionsListenerRegistered) {
+            MobileCore.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.NOTIFICATION, new AdobeCallbackWithError<Event>() {
+                @Override
+                public void fail(final AdobeError error) {
                 }
 
-                final List<Map<String, Object>> propositionsList;
-                try {
-                    propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
+                @Override
+                public void call(final Event event) {
+                    final Map<String, Object> eventData = event.getEventData();
+                    if (OptimizeUtils.isNullOrEmpty(eventData)) {
+                        return;
+                    }
 
-                    final Map<String, Proposition> propositionsMap = new HashMap<>();
-                    if(!OptimizeUtils.isNullOrEmpty(propositionsList)) {
-                        for (final Map<String, Object> propositionData : propositionsList) {
-                            final Proposition proposition = Proposition.fromEventData(propositionData);
-                            if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
-                                propositionsMap.put(OptimizeUtils.retrieveSurfacePathFromScope(proposition.getScope()), proposition);
+                    final List<Map<String, Object>> propositionsList;
+                    try {
+                        propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
+
+                        final Map<String, Proposition> propositionsMap = new HashMap<>();
+                        if (!OptimizeUtils.isNullOrEmpty(propositionsList)) {
+                            for (final Map<String, Object> propositionData : propositionsList) {
+                                final Proposition proposition = Proposition.fromEventData(propositionData);
+                                if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
+                                    propositionsMap.put(OptimizeUtils.retrieveSurfacePathFromScope(proposition.getScope()), proposition);
+                                }
                             }
                         }
-                    }
 
-                    if (!propositionsMap.isEmpty()) {
-                        callback.call(propositionsMap);
+                        if (!propositionsMap.isEmpty()) {
+                            callback.call(propositionsMap);
+                        }
+                    } catch (DataReaderException ignored) {
                     }
-                } catch (DataReaderException ignored) {}
-            }
-        });
+                }
+            });
+            isPropositionsListenerRegistered = true;
+        }
+    }
+
+    @VisibleForTesting
+    protected static void setIsPropositionsListenerRegistered(boolean value) {
+        isPropositionsListenerRegistered = value;
     }
 }
