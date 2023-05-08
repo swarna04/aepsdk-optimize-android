@@ -462,7 +462,7 @@ public class Optimize {
     }
 
     @VisibleForTesting
-    protected static void setIsPropositionsListenerRegistered(boolean value) {
+    protected static void setIsPropositionsListenerRegistered(final boolean value) {
         isPropositionsListenerRegistered = value;
     }
 }
