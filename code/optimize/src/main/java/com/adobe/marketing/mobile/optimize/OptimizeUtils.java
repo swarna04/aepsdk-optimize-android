@@ -91,7 +91,7 @@ class OptimizeUtils {
         try {
             output = new String(Base64.decode(str, Base64.DEFAULT));
         } catch(final IllegalArgumentException ex) {
-            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, String.format("Base64 decode failed for the given string (%s) with exception: %s", str, ex.getLocalizedMessage()));
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Base64 decode failed for the given string (%s) with exception: %s", str, ex.getLocalizedMessage());
         }
         return output;
     }
@@ -142,7 +142,7 @@ class OptimizeUtils {
      * @param surface {@link String} the surface name
      * @return {@link String} surface prefixed with mobile app surface if valid, or null otherwise
      */
-    static String getPrefixSurface(final String surface) {
+    static String getPrefixedSurface(final String surface) {
         if (OptimizeUtils.isNullOrEmpty(surface)) {
             return null;
         }
@@ -167,19 +167,36 @@ class OptimizeUtils {
 
     /**
      * Checks if provided string is a valid URI
-     * @param stringUri {@link String} input string
+     * @param uriString {@link String} input string
      * @return true if inputted string is a valid URI, false otherwise
      */
-    static boolean isValidUri(final String stringUri) {
-        if (StringUtils.isNullOrEmpty(stringUri)) {
+    static boolean isValidUri(final String uriString) {
+        if (StringUtils.isNullOrEmpty(uriString)) {
             return false;
-        } else {
-            try {
-                new URI(stringUri);
-                return true;
-            } catch (URISyntaxException var2) {
-                return false;
-            }
         }
+        try {
+            new URI(uriString);
+            return true;
+        } catch (URISyntaxException ex) {
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Given string %s is not a valid URI, exception: %s", uriString, ex.getLocalizedMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Retrieves surface path from the provided scope string.
+     *
+     * @param scope {@link String} containing the surface URI to extract surface path from.
+     * @return surface path extracted from input string
+     */
+    static final String retrieveSurfacePathFromScope(final String scope) {
+        if (OptimizeUtils.isNullOrEmpty(scope)) {
+            return scope;
+        }
+        final String mobileAppSurface = OptimizeUtils.getMobileAppSurface();
+        if (!OptimizeUtils.isNullOrEmpty(mobileAppSurface) && scope.startsWith(mobileAppSurface)) {
+            return scope.substring(mobileAppSurface.length()+1);
+        }
+        return scope;
     }
 }

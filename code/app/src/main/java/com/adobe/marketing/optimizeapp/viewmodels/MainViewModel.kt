@@ -16,7 +16,6 @@ import androidx.lifecycle.ViewModel
 import com.adobe.marketing.mobile.AdobeCallbackWithError
 import com.adobe.marketing.mobile.AdobeError
 import com.adobe.marketing.mobile.optimize.DecisionScope
-import com.adobe.marketing.mobile.optimize.Offer
 import com.adobe.marketing.mobile.optimize.Optimize
 import com.adobe.marketing.mobile.optimize.Proposition
 import com.adobe.marketing.optimizeapp.models.OptimizePair
@@ -72,7 +71,7 @@ class MainViewModel: ViewModel() {
 
     init {
         Optimize.onPropositionsUpdate(propositionUpdateCallback)
-        Optimize.onPropositionsUpdateForSurfaces(propositionsUpdateForSurfacesCallback)
+        Optimize.setPropositionsHandler(propositionsUpdateForSurfacesCallback)
     }
 
     //Begin: Calls to Optimize SDK APIs

@@ -34,7 +34,6 @@ import androidx.annotation.VisibleForTesting;
 class OptimizeExtension extends Extension {
 
     private static final String SELF_TAG = "OptimizeExtension";
-    private static final String URI_MATCHER = "^[a-z]+://[^\\s/$.?#].[^\\s]*$";
     private String personalizationRequestEventId = "";
     private Map<String, Proposition> cachedPropositions;
 
@@ -188,23 +187,28 @@ class OptimizeExtension extends Extension {
 
         try {
             List<String> validDecisionScopeNames = new ArrayList<>();
-            List<String> validSurfaceNames = new ArrayList<>();
+            List<String> validSurfaces = new ArrayList<>();
 
             final List<Map<String, Object>> decisionScopesData = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.DECISION_SCOPES);
             final List<String> surfaces = DataReader.getStringList(eventData, OptimizeConstants.EventDataKeys.SURFACES);
 
             if (!OptimizeUtils.isNullOrEmpty(decisionScopesData)) {
                 validDecisionScopeNames = retrieveValidDecisionScopes(decisionScopesData);
+                if (OptimizeUtils.isNullOrEmpty(validDecisionScopeNames)) {
+                    Log.debug(OptimizeConstants.LOG_TAG,
+                            SELF_TAG,
+                            "handleUpdatePropositions - Cannot process the update propositions request event, decision scopes in the event data are either not present or empty.");
+                    return;
+                }
             } else if (!OptimizeUtils.isNullOrEmpty(surfaces)) {
-                validSurfaceNames = retrieveValidSurfaces(surfaces);
+                validSurfaces = retrieveValidSurfaces(surfaces);
+                if (OptimizeUtils.isNullOrEmpty(validSurfaces)) {
+                    Log.debug(OptimizeConstants.LOG_TAG,
+                            SELF_TAG,
+                            "handleUpdatePropositions - Cannot process the update propositions request event, surface paths in the event data are either not present or empty.");
+                    return;
+                }
             } else {
-                Log.debug(OptimizeConstants.LOG_TAG,
-                        SELF_TAG,
-                        "handleUpdatePropositions - Cannot process the update propositions request event, surfaces or decision scopes in the event data are either not present or empty.");
-                return;
-            }
-
-            if (OptimizeUtils.isNullOrEmpty(validDecisionScopeNames) && OptimizeUtils.isNullOrEmpty(validSurfaceNames)) {
                 Log.debug(OptimizeConstants.LOG_TAG,
                         SELF_TAG,
                         "handleUpdatePropositions - Cannot process the update propositions request event, surfaces or decision scopes in the event data are either not present or empty.");
@@ -217,7 +221,7 @@ class OptimizeExtension extends Extension {
             final Map<String, Object> queryPersonalization = new HashMap<>();
             queryPersonalization.put(OptimizeConstants.JsonKeys.SCHEMAS, supportedSchemas);
             queryPersonalization.put(OptimizeConstants.JsonKeys.DECISION_SCOPES, validDecisionScopeNames);
-            queryPersonalization.put(OptimizeConstants.JsonKeys.SURFACES, validSurfaceNames);
+            queryPersonalization.put(OptimizeConstants.JsonKeys.SURFACES, validSurfaces);
             final Map<String, Object> query = new HashMap<>();
             query.put(OptimizeConstants.JsonKeys.QUERY_PERSONALIZATION, queryPersonalization);
             edgeEventData.put(OptimizeConstants.JsonKeys.QUERY, query);
@@ -390,14 +394,19 @@ class OptimizeExtension extends Extension {
                 for (final String scopeName : validScopeNames) {
                     if (cachedPropositions.containsKey(scopeName)) {
                         final Proposition proposition = cachedPropositions.get(scopeName);
-                        propositionsList.add(proposition.toEventData());
+                        if (proposition != null) {
+                            propositionsList.add(proposition.toEventData());
+                        }
                     }
                 }
             } else if (!OptimizeUtils.isNullOrEmpty(surfaces)) {
                 for (final String surface : surfaces) {
-                    if (cachedPropositions.containsKey(surface)) {
-                        final Proposition proposition = cachedPropositions.get(surface);
-                        propositionsList.add(proposition.toEventData());
+                    String prefixedSurface = OptimizeUtils.getPrefixedSurface(surface);
+                    if (OptimizeUtils.isValidUri(prefixedSurface) && cachedPropositions.containsKey(prefixedSurface)) {
+                        final Proposition proposition = cachedPropositions.get(prefixedSurface);
+                        if (proposition != null) {
+                            propositionsList.add(proposition.toEventData());
+                        }
                     }
                 }
             } else {
@@ -539,19 +548,19 @@ class OptimizeExtension extends Extension {
 
     private List<String> retrieveValidSurfaces(final List<String> surfaces) {
         if (OptimizeUtils.isNullOrEmpty(surfaces)) {
-            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidSurfaces - No valid surfaces are retrieved, provided surfaces list is null or empty.");
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidSurfaces - provided list of surfaces is null or empty.");
             return null;
         }
         final List<String> validSurfaceNames = new ArrayList<>();
         for(final String surface: surfaces) {
-            String prefixedSurface = OptimizeUtils.getPrefixSurface(surface);
+            final String prefixedSurface = OptimizeUtils.getPrefixedSurface(surface);
             if (OptimizeUtils.isValidUri(prefixedSurface)) {
                 validSurfaceNames.add(prefixedSurface);
             }
         }
 
         if (validSurfaceNames.size() == 0) {
-            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidSurfaces - No valid surfaces are retrieved, provided list of surfaces has no valid scope.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidSurfaces - provided list of surfaces has no valid surface.");
             return null;
         }
 

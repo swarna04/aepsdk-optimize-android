@@ -12,12 +12,9 @@
 
 package com.adobe.marketing.mobile.optimize;
 
-import android.app.Service;
-
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.adobe.marketing.mobile.AdobeCallback;
 import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
@@ -1160,7 +1157,7 @@ public class OptimizeFunctionalTests {
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
                 "                                        \"id\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n" +
-                "                                        \"scope\": \"myView#htmlElement\",\n" +
+                "                                        \"scope\": \"mobileapp://com.adobe.marketing.mobile.optimize.test/myView#htmlElement\",\n" +
                 "                                        \"scopeDetails\": {\n" +
                 "                                            \"correlationID\": \"cccccccc-cccc-cccc-cccc-cccccccccccc\",\n" +
                 "                                            \"characteristics\": {\n" +
@@ -1228,7 +1225,7 @@ public class OptimizeFunctionalTests {
         Proposition proposition = propositionMap.get("myView#htmlElement");
         Assert.assertNotNull(proposition);
         Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
-        Assert.assertEquals("myView#htmlElement", proposition.getScope());
+        Assert.assertEquals("mobileapp://com.adobe.marketing.mobile.optimize.test/myView#htmlElement", proposition.getScope());
         Assert.assertEquals(1, proposition.getOffers().size());
         Assert.assertEquals(4, proposition.getScopeDetails().size());
         Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
@@ -1367,7 +1364,7 @@ public class OptimizeFunctionalTests {
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
                 "                                        \"id\": \"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n" +
-                "                                        \"scope\": \"myView#htmlElement\",\n" +
+                "                                        \"scope\": \"mobileapp://com.adobe.marketing.mobile.optimize.test/myView#htmlElement\",\n" +
                 "                                        \"scopeDetails\": {\n" +
                 "                                            \"correlationID\": \"cccccccc-cccc-cccc-cccc-cccccccccccc\",\n" +
                 "                                            \"characteristics\": {\n" +
@@ -1441,7 +1438,7 @@ public class OptimizeFunctionalTests {
         Proposition proposition = propositionMap.get("myView#htmlElement");
         Assert.assertNotNull(proposition);
         Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
-        Assert.assertEquals("myView#htmlElement", proposition.getScope());
+        Assert.assertEquals("mobileapp://com.adobe.marketing.mobile.optimize.test/myView#htmlElement", proposition.getScope());
         Assert.assertEquals(1, proposition.getOffers().size());
         Assert.assertEquals(4, proposition.getScopeDetails().size());
         Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
@@ -2180,7 +2177,7 @@ public class OptimizeFunctionalTests {
         updateConfiguration(configData);
 
         //Action
-        Optimize.onPropositionsUpdateForSurfaces(propositionMap -> {
+        Optimize.setPropositionsHandler(propositionMap -> {
 
             // verify
             Assert.assertEquals(1, propositionMap.size());
@@ -2240,7 +2237,7 @@ public class OptimizeFunctionalTests {
         // onPropositionsUpdate should not be called for empty propositions in personalization notification response
         //Action
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        Optimize.onPropositionsUpdateForSurfaces(propositionMap -> {
+        Optimize.setPropositionsHandler(propositionMap -> {
             countDownLatch.countDown();
         });
 
@@ -2276,7 +2273,7 @@ public class OptimizeFunctionalTests {
         // onPropositionsUpdate should not be called for null propositions in personalization notification response
         //Action
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        Optimize.onPropositionsUpdateForSurfaces(propositionMap -> {
+        Optimize.setPropositionsHandler(propositionMap -> {
             countDownLatch.countDown();
         });
 

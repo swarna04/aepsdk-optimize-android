@@ -283,22 +283,22 @@ public class Optimize {
     /**
      * This API dispatches an Event for the Edge network extension to fetch decision propositions, for the provided mobile surfaces from the decisioning Services enabled behind Experience Edge.
      * <p>
-     * The returned decision propositions are cached in-memory in the Optimize SDK extension and can be retrieved using {@link #getPropositions(List, AdobeCallback)} API.
+     * The returned decision propositions are cached in-memory in the Optimize SDK extension and can be retrieved using {@link #getPropositionsForSurfacePaths(List, AdobeCallback)} API.
      *
-     * @param surfaces {@code List<String>} containing mobile surfaces.
+     * @param surfacePaths {@code List<String>} containing mobile surfaces.
      * @param xdm {@code Map<String, Object>} containing additional XDM-formatted data to be sent in the personalization query request.
      * @param data {@code Map<String, Object>} containing additional free-form data to be sent in the personalization query request.
      */
-    public static void updatePropositionsForSurfacePaths(@NonNull final List<String> surfaces,
+    public static void updatePropositionsForSurfacePaths(@NonNull final List<String> surfacePaths,
                                           @Nullable final Map<String, Object> xdm,
                                           @Nullable final Map<String, Object> data) {
-        if (OptimizeUtils.isNullOrEmpty(surfaces)) {
-            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided surfaces array is null or empty.");
+        if (OptimizeUtils.isNullOrEmpty(surfacePaths)) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of surface paths is null or empty.");
             return;
         }
 
         final List<String> validSurfaces = new ArrayList<>();
-        for (String surface: surfaces) {
+        for (final String surface: surfacePaths) {
             if (OptimizeUtils.isNullOrEmpty(surface)) {
                 continue;
             }
@@ -306,7 +306,7 @@ public class Optimize {
         }
 
         if (validSurfaces.size() == 0) {
-            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided surfaces array has no valid item.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of surface paths has no valid item.");
             return;
         }
 
@@ -337,19 +337,19 @@ public class Optimize {
      * The completion handler will be invoked with the decision propositions corresponding to the given surface strings.
      * If a certain surface has not already been fetched prior to this API call, it will not be contained in the returned propositions.
      *
-     * @param surfaces {@code List<String>} containing mobile surfaces.
+     * @param surfacePaths {@code List<String>} containing mobile surfaces.
      * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are retrieved from the local cache.
      */
-    public static void getPropositionsForSurfacePaths(@NonNull final List<String> surfaces,
+    public static void getPropositionsForSurfacePaths(@NonNull final List<String> surfacePaths,
                                        @NonNull final AdobeCallback<Map<String, Proposition>> callback) {
-        if (OptimizeUtils.isNullOrEmpty(surfaces)) {
-            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided surfaces array is null or empty.");
+        if (OptimizeUtils.isNullOrEmpty(surfacePaths)) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided list of surface paths is null or empty.");
             failWithError(callback, AdobeError.UNEXPECTED_ERROR);
             return;
         }
 
         final List<String> validSurfaces = new ArrayList<>();
-        for (String surface: surfaces) {
+        for (final String surface: surfacePaths) {
             if (OptimizeUtils.isNullOrEmpty(surface)) {
                 continue;
             }
@@ -357,7 +357,7 @@ public class Optimize {
         }
 
         if (validSurfaces.size() == 0) {
-            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided surfaces array has no valid item.");
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided list of surface paths no valid item.");
             failWithError(callback, AdobeError.UNEXPECTED_ERROR);
             return;
         }
@@ -399,7 +399,7 @@ public class Optimize {
                         for (final Map<String, Object> propositionData : propositionsList) {
                             final Proposition proposition = Proposition.fromEventData(propositionData);
                             if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
-                                propositionsMap.put(proposition.getScope(), proposition);
+                                propositionsMap.put(OptimizeUtils.retrieveSurfacePathFromScope(proposition.getScope()), proposition);
                             }
                         }
                     }
@@ -420,7 +420,7 @@ public class Optimize {
      *
      * @param callback {@code AdobeCallbackWithError<Map<String, Proposition>>} which will be invoked when decision propositions are received from the Edge network.
      */
-    public static void onPropositionsUpdateForSurfaces(@NonNull final AdobeCallback<Map<String, Proposition>> callback) {
+    public static void setPropositionsHandler(@NonNull final AdobeCallback<Map<String, Proposition>> callback) {
         MobileCore.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.NOTIFICATION, new AdobeCallbackWithError<Event>() {
             @Override
             public void fail(final AdobeError error) {}
@@ -441,7 +441,7 @@ public class Optimize {
                         for (final Map<String, Object> propositionData : propositionsList) {
                             final Proposition proposition = Proposition.fromEventData(propositionData);
                             if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
-                                propositionsMap.put(proposition.getScope(), proposition);
+                                propositionsMap.put(OptimizeUtils.retrieveSurfacePathFromScope(proposition.getScope()), proposition);
                             }
                         }
                     }

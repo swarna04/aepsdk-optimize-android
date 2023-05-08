@@ -216,6 +216,13 @@ public class OfferTests {
     }
 
     @Test
+    public void testFromEventData_invalidOfferNoId() throws Exception {
+        Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_INVALID_MISSING_ID.json"), HashMap.class);
+        final Offer offer = Offer.fromEventData(offerData);
+        Assert.assertNull(offer);
+    }
+
+    @Test
     public void testFromEventData_invalidOfferNoContent() throws Exception {
         Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_INVALID_MISSING_CONTENT.json"), HashMap.class);
         final Offer offer = Offer.fromEventData(offerData);

@@ -201,7 +201,7 @@ public class OptimizeUtilsTest {
             when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
             when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
 
-            Assert.assertEquals("mobileapp://com.android.test.package/testSurface", OptimizeUtils.getPrefixSurface("testSurface"));
+            Assert.assertEquals("mobileapp://com.android.test.package/testSurface", OptimizeUtils.getPrefixedSurface("testSurface"));
         }
     }
 
@@ -215,7 +215,7 @@ public class OptimizeUtilsTest {
             when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
             when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
 
-            Assert.assertNull(OptimizeUtils.getPrefixSurface(null));
+            Assert.assertNull(OptimizeUtils.getPrefixedSurface(null));
         }
     }
 
@@ -229,13 +229,13 @@ public class OptimizeUtilsTest {
             when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
             when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
 
-            Assert.assertNull(OptimizeUtils.getPrefixSurface(""));
+            Assert.assertNull(OptimizeUtils.getPrefixedSurface(""));
         }
     }
 
     @Test
     public void testGetPrefixSurface_applicationPackageNameNotAvailable() {
-        Assert.assertNull(OptimizeUtils.getPrefixSurface("testSurface"));
+        Assert.assertNull(OptimizeUtils.getPrefixedSurface("testSurface"));
     }
 
     @Test

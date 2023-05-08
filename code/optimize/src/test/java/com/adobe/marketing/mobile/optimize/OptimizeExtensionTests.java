@@ -989,7 +989,7 @@ public class OptimizeExtensionTests {
 
             // verify
             Mockito.verify(mockExtensionApi, Mockito.times(0)).dispatch(ArgumentMatchers.any());
-            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()), Mockito.times(1));
+            logMockedStatic.verify(() -> Log.debug(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()), Mockito.times(2));
             logMockedStatic.verify(() -> Log.warning(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.any()), Mockito.times(1));
         }
     }
@@ -1724,7 +1724,7 @@ public class OptimizeExtensionTests {
             final Proposition testProposition = Proposition.fromEventData(testPropositionData);
             Assert.assertNotNull(testProposition);
             final Map<String, Proposition> cachedPropositions = new HashMap<>();
-            cachedPropositions.put(testProposition.getScope(), testProposition);
+            cachedPropositions.put("mobileapp://com.android.test.package//myView#htmlElement", testProposition);
             extension.setCachedPropositions(cachedPropositions);
 
             final Map<String, Object> testEventData = new HashMap<>();
@@ -1800,7 +1800,7 @@ public class OptimizeExtensionTests {
             final Proposition testProposition = Proposition.fromEventData(testPropositionData);
             Assert.assertNotNull(testProposition);
             final Map<String, Proposition> cachedPropositions = new HashMap<>();
-            cachedPropositions.put(testProposition.getScope(), testProposition);
+            cachedPropositions.put("mobileapp://com.android.test.package//myView#htmlElement", testProposition);
             extension.setCachedPropositions(cachedPropositions);
 
             final Map<String, Object> testEventData = new HashMap<>();

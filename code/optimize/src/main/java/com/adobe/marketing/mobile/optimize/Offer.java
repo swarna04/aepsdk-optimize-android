@@ -418,6 +418,17 @@ public class Offer {
             final Map<String, Object> offerData = DataReader.getTypedMap(Object.class, data, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA);
 
             if (!OptimizeUtils.isNullOrEmpty(offerData)) {
+                if (OptimizeUtils.isNullOrEmpty(id)) {
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,"Cannot create Offer object, provided item id is null or empty");
+                    return null;
+                }
+
+                final String nestedId = (String) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_ID);
+                if(!OptimizeUtils.isNullOrEmpty(nestedId) && !id.equals(nestedId)) {
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,"Cannot create Offer object, provided item id doesn't match item data id.");
+                    return null;
+                }
+
                 final String format = (String) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_FORMAT);
                 final List<String> language = DataReader.getStringList(offerData, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_LANGUAGE);
                 final Map<String, String> characteristics = DataReader.getStringMap(offerData, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_CHARACTERISTICS);
