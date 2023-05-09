@@ -160,7 +160,7 @@ Optimize.getPropositionsForSurfacePaths(surfacePaths, new AdobeCallbackWithError
 
 ## onPropositionsUpdate
 
-This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event handle received from the Experience Edge Network upon a personalization query. The personalization query requests can be triggered by the `updatePropositions` API, Edge extension `sendEvent` API or launch consequence rules.
+This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event handle received from the Experience Edge Network upon a personalization query. The personalization query requests can be triggered by the `updatePropositions` API.
 
 ### Java
 
@@ -192,7 +192,7 @@ Optimize.onPropositionsUpdate(new AdobeCallbackWithError<Map<DecisionScope, Prop
 
 ### setPropositionsHandler
 
-This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event handle received from the Experience Edge Network upon a personalization query. The personalization query requests can be triggered by the `updatePropositionsForSurfacePaths` API, Edge extension `sendEvent` API or launch consequence rules.
+This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event handle received from the Experience Edge Network upon a personalization query. The personalization query requests can be triggered by the `updatePropositionsForSurfacePaths` API.
 
 ### Java
 

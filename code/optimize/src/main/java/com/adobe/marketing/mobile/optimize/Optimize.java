@@ -212,7 +212,7 @@ public class Optimize {
     /**
      * This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event received from the Experience Edge Network upon a personalization query.
      * <p>
-     * The personalization query requests can be triggered by the {@link Optimize#updatePropositions(List, Map, Map)} API, Edge extension {@code sendEvent(ExperienceEvent, EdgeCallback)} API or launch consequence rules.
+     * The personalization query requests can be triggered by the {@link Optimize#updatePropositions(List, Map, Map)} API.
      *
      * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are received from the Edge network.
      */
@@ -417,8 +417,7 @@ public class Optimize {
      * This API registers a permanent callback which is invoked whenever the Edge extension dispatches an Event handle,
      * upon a personalization decisions response from the Experience Edge Network.
      * <p>
-     * The personalization query requests can be triggered by the {@link Optimize#updatePropositionsForSurfacePaths(List, Map, Map)} API,
-     * Edge extension {@code sendEvent(ExperienceEvent, EdgeCallback)} API or launch consequence rules.
+     * The personalization query requests can be triggered by the {@link Optimize#updatePropositionsForSurfacePaths(List, Map, Map)} API.
      *
      * @param callback {@code AdobeCallbackWithError<Map<String, Proposition>>} which will be invoked when decision propositions are received from the Edge network.
      */
