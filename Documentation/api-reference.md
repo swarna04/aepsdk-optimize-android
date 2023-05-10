@@ -298,7 +298,7 @@ This API dispatches an Event for the Edge network extension to fetch decision pr
 #### Syntax
 
 ```java
-public static void updatePropositions(final List<String> surfacePaths, final Map<String, Object> xdm, final Map<String, Object> data)
+public static void updatePropositionsForSurfacePaths(final List<String> surfacePaths, final Map<String, Object> xdm, final Map<String, Object> data)
 ```
 
 * surfacePaths is a list of surface paths for which propositions need updating.
@@ -315,7 +315,7 @@ final List<String> surfacePaths = new ArrayList<>();
 surfacePaths.add(surfacePath1);
 surfacePaths.add(surfacePath2);
 
-Optimize.updatePropositions(surfacePaths, 
+Optimize.updatePropositionsForSurfacePaths(surfacePaths, 
                             new HashMap<String, Object>() {
                                 {
                                     put("xdmKey", "xdmValue");

@@ -2,7 +2,7 @@
   "payload": [
     {
       "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-      "scope": "/myView#htmlElement",
+      "scope": "mobileapp://com.android.test.package/myView#htmlElement",
       "scopeDetails": {
         "correlationID": "cccccccc-cccc-cccc-cccc-cccccccccccc",
         "characteristics": {

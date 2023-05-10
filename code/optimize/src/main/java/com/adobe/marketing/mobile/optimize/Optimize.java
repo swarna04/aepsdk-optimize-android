@@ -202,7 +202,7 @@ public class Optimize {
                         }
                     }
                     callback.call(propositionsMap);
-                } catch (DataReaderException e) {
+                } catch (final DataReaderException e) {
                     failWithError(callback, AdobeError.UNEXPECTED_ERROR);
                 }
             }
@@ -247,7 +247,9 @@ public class Optimize {
                     if (!propositionsMap.isEmpty()) {
                         callback.call(propositionsMap);
                     }
-                } catch (DataReaderException ignored) {}
+                } catch (final DataReaderException ex) {
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Propositions in response event received from the Experience Edge Network data contains invalid fields.");
+                }
             }
         });
     }
@@ -299,22 +301,22 @@ public class Optimize {
             return;
         }
 
-        final List<String> validSurfaces = new ArrayList<>();
-        for (final String surface: surfacePaths) {
-            if (OptimizeUtils.isNullOrEmpty(surface)) {
+        final List<String> validSurfacePaths = new ArrayList<>();
+        for (final String surfacePath: surfacePaths) {
+            if (OptimizeUtils.isNullOrEmpty(surfacePath)) {
                 continue;
             }
-            validSurfaces.add(surface);
+            validSurfacePaths.add(surfacePath);
         }
 
-        if (validSurfaces.size() == 0) {
+        if (validSurfacePaths.size() == 0) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of surface paths has no valid item.");
             return;
         }
 
         final Map<String, Object> eventData = new HashMap<>();
         eventData.put(OptimizeConstants.EventDataKeys.REQUEST_TYPE, OptimizeConstants.EventDataValues.REQUEST_TYPE_UPDATE);
-        eventData.put(OptimizeConstants.EventDataKeys.SURFACES, validSurfaces);
+        eventData.put(OptimizeConstants.EventDataKeys.SURFACES, validSurfacePaths);
 
         if (!OptimizeUtils.isNullOrEmpty(xdm)) {
             eventData.put(OptimizeConstants.EventDataKeys.XDM, xdm);
@@ -350,15 +352,15 @@ public class Optimize {
             return;
         }
 
-        final List<String> validSurfaces = new ArrayList<>();
-        for (final String surface: surfacePaths) {
-            if (OptimizeUtils.isNullOrEmpty(surface)) {
+        final List<String> validSurfacePaths = new ArrayList<>();
+        for (final String surfacePath: surfacePaths) {
+            if (OptimizeUtils.isNullOrEmpty(surfacePath)) {
                 continue;
             }
-            validSurfaces.add(surface);
+            validSurfacePaths.add(surfacePath);
         }
 
-        if (validSurfaces.size() == 0) {
+        if (validSurfacePaths.size() == 0) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided list of surface paths no valid item.");
             failWithError(callback, AdobeError.UNEXPECTED_ERROR);
             return;
@@ -366,7 +368,7 @@ public class Optimize {
 
         final Map<String, Object> eventData = new HashMap<>();
         eventData.put(OptimizeConstants.EventDataKeys.REQUEST_TYPE, OptimizeConstants.EventDataValues.REQUEST_TYPE_GET);
-        eventData.put(OptimizeConstants.EventDataKeys.SURFACES, validSurfaces);
+        eventData.put(OptimizeConstants.EventDataKeys.SURFACES, validSurfacePaths);
 
         final Event event = new Event.Builder(OptimizeConstants.EventNames.GET_PROPOSITIONS_REQUEST,
                 OptimizeConstants.EventType.OPTIMIZE,
@@ -406,7 +408,7 @@ public class Optimize {
                         }
                     }
                     callback.call(propositionsMap);
-                } catch (DataReaderException e) {
+                } catch (final DataReaderException e) {
                     failWithError(callback, AdobeError.UNEXPECTED_ERROR);
                 }
             }
@@ -452,7 +454,8 @@ public class Optimize {
                         if (!propositionsMap.isEmpty()) {
                             callback.call(propositionsMap);
                         }
-                    } catch (DataReaderException ignored) {
+                    } catch (final DataReaderException ignored) {
+                        Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Propositions in response event received from the Experience Edge Network data contains invalid fields.");
                     }
                 }
             });

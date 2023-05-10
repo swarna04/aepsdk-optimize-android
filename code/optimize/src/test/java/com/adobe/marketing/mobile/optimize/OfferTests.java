@@ -245,6 +245,13 @@ public class OfferTests {
     }
 
     @Test
+    public void testFromEventData_invalidOfferIdMismatch() throws Exception {
+        Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_INVALID_ID_MISMATCH.json"), HashMap.class);
+        final Offer offer = Offer.fromEventData(offerData);
+        Assert.assertNull(offer);
+    }
+
+    @Test
     public void testFromEventData_nullData() {
         final Offer offer = Offer.fromEventData(null);
         Assert.assertNull(offer);

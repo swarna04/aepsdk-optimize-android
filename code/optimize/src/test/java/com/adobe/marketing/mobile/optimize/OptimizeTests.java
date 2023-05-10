@@ -643,7 +643,7 @@ public class OptimizeTests {
                     .thenAnswer((Answer<byte[]>) invocation -> java.util.Base64.getDecoder().decode((String) invocation.getArguments()[0]));
 
             // test
-            Optimize.getPropositionsForSurfacePaths(Collections.singletonList("/myView#htmlElement"), new AdobeCallbackWithError<Map<String, Proposition>>() {
+            Optimize.getPropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"), new AdobeCallbackWithError<Map<String, Proposition>>() {
                 @Override
                 public void fail(AdobeError adobeError) {
                     responseError = adobeError;
@@ -671,7 +671,7 @@ public class OptimizeTests {
 
             final List<String> scopesList = (List<String>) eventData.get("surfaces");
             Assert.assertEquals(1, scopesList.size());
-            Assert.assertEquals("/myView#htmlElement", scopesList.get(0));
+            Assert.assertEquals("myView#htmlElement", scopesList.get(0));
 
             // verify callback response
             final Map<String, Object> propositionData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/PROPOSITION_VALID_SURFACE.json"), HashMap.class);
@@ -690,7 +690,7 @@ public class OptimizeTests {
             Assert.assertNull(responseError);
             Assert.assertNotNull(responseMapForSurface);
             Assert.assertEquals(1, responseMapForSurface.size());
-            Proposition actualProposition = responseMapForSurface.get("/myView#htmlElement");
+            Proposition actualProposition = responseMapForSurface.get("mobileapp://com.android.test.package/myView#htmlElement");
             Assert.assertEquals(proposition, actualProposition);
         }
     }
@@ -963,7 +963,7 @@ public class OptimizeTests {
             Assert.assertNull(responseError);
             Assert.assertNotNull(responseMapForSurface);
             Assert.assertEquals(1, responseMapForSurface.size());
-            Proposition actualProposition = responseMapForSurface.get("/myView#htmlElement");
+            Proposition actualProposition = responseMapForSurface.get("mobileapp://com.android.test.package/myView#htmlElement");
             Assert.assertEquals(proposition, actualProposition);
         }
     }

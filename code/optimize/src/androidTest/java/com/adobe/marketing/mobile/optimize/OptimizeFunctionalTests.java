@@ -2182,11 +2182,11 @@ public class OptimizeFunctionalTests {
 
             // verify
             Assert.assertEquals(1, propositionMap.size());
-            Assert.assertNotNull(propositionMap.get("myView#htmlElement"));
+            Assert.assertNotNull(propositionMap.get("mobileapp://com.adobe.marketing.mobile.optimize.test/myView#htmlElement"));
 
             Proposition proposition = propositionMap.get("myView#htmlElement");
             Assert.assertEquals("2cceff23-5eea-4bad-af5f-abb1aca1ea2e", proposition.getId());
-            Assert.assertEquals("myView#htmlElement", proposition.getScope());
+            Assert.assertEquals("mobileapp://com.adobe.marketing.mobile.optimize.test/myView#htmlElement", proposition.getScope());
             Assert.assertEquals(1, proposition.getOffers().size());
             Assert.assertEquals("fd125be6-f505-4640-ba26-9527c682e1a8", proposition.getOffers().get(0).getId());
             Assert.assertEquals("https://ns.adobe.com/personalization/html-content-item", proposition.getOffers().get(0).getSchema());
@@ -2199,7 +2199,7 @@ public class OptimizeFunctionalTests {
                 "                                   \"propositions\": [\n" +
                 "                                    {\n" +
                 "                                        \"id\": \"2cceff23-5eea-4bad-af5f-abb1aca1ea2e\",\n" +
-                "                                        \"scope\": \"myView#htmlElement\",\n" +
+                "                                        \"scope\": \"mobileapp://com.adobe.marketing.mobile.optimize.test/myView#htmlElement\",\n" +
                 "                                        \"items\": [\n" +
                 "                                            {\n" +
                 "                                                \"id\": \"fd125be6-f505-4640-ba26-9527c682e1a8\",\n" +

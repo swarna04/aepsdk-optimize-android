@@ -177,7 +177,7 @@ class OptimizeUtils {
         try {
             new URI(uriString);
             return true;
-        } catch (URISyntaxException ex) {
+        } catch (final URISyntaxException ex) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Given string %s is not a valid URI, exception: %s", uriString, ex.getLocalizedMessage());
             return false;
         }
@@ -189,7 +189,7 @@ class OptimizeUtils {
      * @param scope {@link String} containing the surface URI to extract surface path from.
      * @return surface path extracted from input string
      */
-    static final String retrieveSurfacePathFromScope(final String scope) {
+    static String retrieveSurfacePathFromScope(final String scope) {
         if (OptimizeUtils.isNullOrEmpty(scope)) {
             return scope;
         }

@@ -263,7 +263,7 @@ public class OptimizeUtilsTest {
 
     @Test
     public void testIsValidUri_invalidUri() {
-        Assert.assertFalse(OptimizeUtils.isValidUri("/myView/mySubviews/\\\\*/home.html"));
+        Assert.assertFalse(OptimizeUtils.isValidUri("mobileapp://com.android.test.package/myView/mySubviews/\\\\*/home.html"));
     }
 
     @Test

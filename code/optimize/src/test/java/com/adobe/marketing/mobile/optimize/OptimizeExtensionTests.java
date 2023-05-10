@@ -976,7 +976,7 @@ public class OptimizeExtensionTests {
             testEventData.put("requesttype", "updatepropositions");
             testEventData.put("surfaces", new ArrayList<String>() {
                 {
-                    add("/myView/mySubviews/\\\\*/home.html");
+                    add("myView/mySubviews/\\\\*/home.html");
                 }
             });
 
@@ -1229,7 +1229,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(proposition);
 
             Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
-            Assert.assertEquals("/myView#htmlElement", proposition.getScope());
+            Assert.assertEquals("mobileapp://com.android.test.package/myView#htmlElement", proposition.getScope());
             Assert.assertEquals(4, proposition.getScopeDetails().size());
             Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
             Assert.assertEquals("AJO", proposition.getScopeDetails().get("decisionProvider"));
@@ -1248,7 +1248,7 @@ public class OptimizeExtensionTests {
             final Map<String, Proposition> cachedPropositions = extension.getCachedPropositions();
             Assert.assertNotNull(cachedPropositions);
             Assert.assertEquals(1, cachedPropositions.size());
-            Assert.assertEquals(proposition, cachedPropositions.get("/myView#htmlElement"));
+            Assert.assertEquals(proposition, cachedPropositions.get("mobileapp://com.android.test.package/myView#htmlElement"));
         }
     }
 
@@ -1724,14 +1724,14 @@ public class OptimizeExtensionTests {
             final Proposition testProposition = Proposition.fromEventData(testPropositionData);
             Assert.assertNotNull(testProposition);
             final Map<String, Proposition> cachedPropositions = new HashMap<>();
-            cachedPropositions.put("mobileapp://com.android.test.package//myView#htmlElement", testProposition);
+            cachedPropositions.put("mobileapp://com.android.test.package/myView#htmlElement", testProposition);
             extension.setCachedPropositions(cachedPropositions);
 
             final Map<String, Object> testEventData = new HashMap<>();
             testEventData.put("requesttype", "getpropositions");
             testEventData.put("surfaces", new ArrayList<String>() {
                 {
-                    add("/myView#htmlElement");
+                    add("myView#htmlElement");
                 }
             });
             final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
@@ -1761,7 +1761,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(proposition);
 
             Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
-            Assert.assertEquals("/myView#htmlElement", proposition.getScope());
+            Assert.assertEquals("mobileapp://com.android.test.package/myView#htmlElement", proposition.getScope());
             Assert.assertEquals(4, proposition.getScopeDetails().size());
             Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
             Assert.assertEquals("AJO", proposition.getScopeDetails().get("decisionProvider"));
@@ -1800,15 +1800,15 @@ public class OptimizeExtensionTests {
             final Proposition testProposition = Proposition.fromEventData(testPropositionData);
             Assert.assertNotNull(testProposition);
             final Map<String, Proposition> cachedPropositions = new HashMap<>();
-            cachedPropositions.put("mobileapp://com.android.test.package//myView#htmlElement", testProposition);
+            cachedPropositions.put("mobileapp://com.android.test.package/myView#htmlElement", testProposition);
             extension.setCachedPropositions(cachedPropositions);
 
             final Map<String, Object> testEventData = new HashMap<>();
             testEventData.put("requesttype", "getpropositions");
             testEventData.put("surfaces", new ArrayList<String>() {
                 {
-                    add("/myView#htmlElement");
-                    add("/myView#jsonElement");
+                    add("myView#htmlElement");
+                    add("myView#jsonElement");
                 }
             });
             final ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
@@ -1838,7 +1838,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(proposition);
 
             Assert.assertEquals("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", proposition.getId());
-            Assert.assertEquals("/myView#htmlElement", proposition.getScope());
+            Assert.assertEquals("mobileapp://com.android.test.package/myView#htmlElement", proposition.getScope());
             Assert.assertEquals(4, proposition.getScopeDetails().size());
             Assert.assertEquals("cccccccc-cccc-cccc-cccc-cccccccccccc", proposition.getScopeDetails().get("correlationID"));
             Assert.assertEquals("AJO", proposition.getScopeDetails().get("decisionProvider"));
