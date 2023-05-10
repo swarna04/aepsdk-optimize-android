@@ -2070,7 +2070,7 @@ public class OptimizeFunctionalTests {
             Assert.assertEquals("This is a plain text content!",  proposition.getOffers().get(0).getContent());
         });
 
-        // Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        // Send Optimize Notification event so that setPropositionsHandler will get called
         final String optimizeNotificationData = "{\n" +
                 "                                   \"propositions\": [\n" +
                 "                                    {\n" +
@@ -2119,7 +2119,7 @@ public class OptimizeFunctionalTests {
             countDownLatch.countDown();
         });
 
-        //Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        //Send Optimize Notification event so that setPropositionsHandler will get called
         final String optimizeNotificationData = "{\n" +
                 "                                   \"propositions\": []\n" +
                 "                               }";
@@ -2155,7 +2155,7 @@ public class OptimizeFunctionalTests {
             countDownLatch.countDown();
         });
 
-        // Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        // Send Optimize Notification event so that setPropositionsHandler will get called
         Event event = new Event.Builder(
                 "Personalization Notification",
                 OptimizeTestConstants.EventType.OPTIMIZE,
@@ -2170,7 +2170,7 @@ public class OptimizeFunctionalTests {
     }
 
     @Test
-    public void testOnPropositionsUpdateForSurfaces_validPropositionForSurface() throws InterruptedException, IOException {
+    public void testSetPropositionsHandler_validPropositionForSurface() throws InterruptedException, IOException {
         //Setup
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
@@ -2194,7 +2194,7 @@ public class OptimizeFunctionalTests {
             Assert.assertEquals("<h3>This is a HTML content!</h3>",  proposition.getOffers().get(0).getContent());
         });
 
-        // Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        // Send Optimize Notification event so that setPropositionsHandler will get called
         final String optimizeNotificationData = "{\n" +
                 "                                   \"propositions\": [\n" +
                 "                                    {\n" +
@@ -2229,7 +2229,7 @@ public class OptimizeFunctionalTests {
     }
 
     @Test
-    public void testOnPropositionsUpdateForSurfaces_emptyPropositionArray() throws InterruptedException, IOException {
+    public void testSetPropositionsHandler_emptyPropositionArray() throws InterruptedException, IOException {
         //Setup
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
@@ -2243,7 +2243,7 @@ public class OptimizeFunctionalTests {
             countDownLatch.countDown();
         });
 
-        //Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        //Send Optimize Notification event so that setPropositionsHandler will get called
         final String optimizeNotificationData = "{\n" +
                 "                                   \"propositions\": []\n" +
                 "                               }";
@@ -2266,7 +2266,7 @@ public class OptimizeFunctionalTests {
     }
 
     @Test
-    public void testOnPropositionsUpdateForSurfaces_nullPropositionArray() throws InterruptedException, IOException {
+    public void testSetPropositionsHandler_nullPropositionArray() throws InterruptedException, IOException {
         //Setup
         Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
@@ -2280,7 +2280,7 @@ public class OptimizeFunctionalTests {
             countDownLatch.countDown();
         });
 
-        // Send Optimize Notification event so that onPropositionsUpdateForSurfaces will get called
+        // Send Optimize Notification event so that setPropositionsHandler will get called
         Event event = new Event.Builder(
                 "Personalization Notification",
                 OptimizeTestConstants.EventType.OPTIMIZE,

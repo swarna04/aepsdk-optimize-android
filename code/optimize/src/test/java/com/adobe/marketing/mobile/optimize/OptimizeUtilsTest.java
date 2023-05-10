@@ -188,7 +188,7 @@ public class OptimizeUtilsTest {
 
     @Test
     public void testGetMobileAppSurface_applicationPackageNameNotAvailable() {
-        Assert.assertNull(OptimizeUtils.getMobileAppSurface());
+        Assert.assertEquals("unknown", OptimizeUtils.getMobileAppSurface());
     }
 
     @Test
@@ -235,7 +235,7 @@ public class OptimizeUtilsTest {
 
     @Test
     public void testGetPrefixSurface_applicationPackageNameNotAvailable() {
-        Assert.assertNull(OptimizeUtils.getPrefixedSurface("testSurface"));
+        Assert.assertEquals("unknown/testSurface", OptimizeUtils.getPrefixedSurface("testSurface"));
     }
 
     @Test

@@ -131,7 +131,7 @@ class OptimizeUtils {
     static String getMobileAppSurface() {
         final String appSurface = ServiceProvider.getInstance().getDeviceInfoService().getApplicationPackageName();
         if (OptimizeUtils.isNullOrEmpty(appSurface)) {
-            return null;
+            return "unknown";
         }
         return OptimizeConstants.SURFACE_BASE + appSurface;
     }

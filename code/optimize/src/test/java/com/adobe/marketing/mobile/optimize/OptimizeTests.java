@@ -925,7 +925,7 @@ public class OptimizeTests {
     }
 
     @Test
-    public void testOnPropositionsUpdateForSurfaces_validProposition() throws Exception {
+    public void testSetPropositionsHandler_validProposition() throws Exception {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
             Optimize.setIsPropositionsListenerRegistered(false);
@@ -969,7 +969,7 @@ public class OptimizeTests {
     }
 
     @Test
-    public void testOnPropositionsUpdateForSurfaces_emptyPropositionData() {
+    public void testSetPropositionsHandler_emptyPropositionData() {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
             Optimize.setIsPropositionsListenerRegistered(false);
@@ -1006,7 +1006,7 @@ public class OptimizeTests {
     }
 
     @Test
-    public void testOnPropositionsUpdateForSurfaces_nullPropositionData() {
+    public void testSetPropositionsHandler_nullPropositionData() {
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
             Optimize.setIsPropositionsListenerRegistered(false);
