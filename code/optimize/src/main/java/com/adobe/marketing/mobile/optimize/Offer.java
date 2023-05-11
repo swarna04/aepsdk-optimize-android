@@ -418,21 +418,20 @@ public class Offer {
             final Map<String, Object> offerData = DataReader.getTypedMap(Object.class, data, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA);
 
             if (!OptimizeUtils.isNullOrEmpty(offerData)) {
-                final String nestedId = (String) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_ID);
-                if (OptimizeUtils.isNullOrEmpty(id) || !id.equals(nestedId)) {
-                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,"Cannot create Offer object, provided item id is null or empty or it doesn't match item data id.");
+                if (OptimizeUtils.isNullOrEmpty(id)) {
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Offer object, provided item id is null or empty.");
                     return null;
                 }
 
-                final String format = (String) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_FORMAT);
-                if (OptimizeUtils.isNullOrEmpty(format)) {
-                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Offer object, provided data Map doesn't contain valid item data format.");
+                final String nestedId = DataReader.getString(offerData, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_ID);
+                if(!OptimizeUtils.isNullOrEmpty(nestedId) && !id.equals(nestedId)) {
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,"Cannot create Offer object, provided item id doesn't match item data id.");
                     return null;
                 }
 
+                final String format = DataReader.getString(offerData, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_FORMAT);
                 final List<String> language = DataReader.getStringList(offerData, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_LANGUAGE);
                 final Map<String, String> characteristics = DataReader.getStringMap(offerData, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_CHARACTERISTICS);
-
 
                 String content = null;
                 if (offerData.containsKey(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_CONTENT)) {
@@ -444,7 +443,7 @@ public class Offer {
                         content = offerContentJson.toString();
                     }
                 } else if (offerData.containsKey(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_DELIVERYURL)) {
-                    content = (String) offerData.get(OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_DELIVERYURL);
+                    content = DataReader.getString(offerData, OptimizeConstants.JsonKeys.PAYLOAD_ITEM_DATA_DELIVERYURL);
                 }
                 if (content == null) {
                     Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot create Offer object, provided data Map doesn't contain valid item data content or deliveryURL.");

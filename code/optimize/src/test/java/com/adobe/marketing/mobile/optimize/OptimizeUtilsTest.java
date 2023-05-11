@@ -12,14 +12,20 @@
 
 package com.adobe.marketing.mobile.optimize;
 
+import static org.mockito.Mockito.when;
+
 import android.util.Base64;
 
 import com.adobe.marketing.mobile.AdobeError;
+import com.adobe.marketing.mobile.Event;
+import com.adobe.marketing.mobile.services.DeviceInforming;
+import com.adobe.marketing.mobile.services.ServiceProvider;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentMatchers;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -33,6 +39,11 @@ import java.util.Map;
 @RunWith(MockitoJUnitRunner.Silent.class)
 @SuppressWarnings({"rawtypes"})
 public class OptimizeUtilsTest {
+
+    @Mock
+    private ServiceProvider mockServiceProvider;
+
+    @Mock private DeviceInforming mockDeviceInfoService;
 
     @Test
     public void testIsNullOrEmpty_nullMap() {
@@ -159,5 +170,109 @@ public class OptimizeUtilsTest {
     @Test
     public void testConvertToAdobeError_unknownErrorCode() {
         Assert.assertEquals(AdobeError.UNEXPECTED_ERROR, OptimizeUtils.convertToAdobeError(123));
+    }
+
+    @Test
+    public void testGetMobileAppSurface_valid() {
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            Assert.assertEquals("mobileapp://com.android.test.package", OptimizeUtils.getMobileAppSurface());
+        }
+    }
+
+    @Test
+    public void testGetMobileAppSurface_applicationPackageNameNotAvailable() {
+        Assert.assertEquals("unknown", OptimizeUtils.getMobileAppSurface());
+    }
+
+    @Test
+    public void testGetPrefixSurface_valid() {
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            Assert.assertEquals("mobileapp://com.android.test.package/testSurface", OptimizeUtils.getPrefixedSurface("testSurface"));
+        }
+    }
+
+    @Test
+    public void testGetPrefixSurface_nullSurface() {
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            Assert.assertNull(OptimizeUtils.getPrefixedSurface(null));
+        }
+    }
+
+    @Test
+    public void testGetPrefixSurface_emptySurface() {
+        try (MockedStatic<ServiceProvider> mockedStaticServiceProvider = Mockito.mockStatic(ServiceProvider.class)) {
+
+            mockedStaticServiceProvider
+                    .when(ServiceProvider::getInstance)
+                    .thenReturn(mockServiceProvider);
+            when(mockServiceProvider.getDeviceInfoService()).thenReturn(mockDeviceInfoService);
+            when(mockDeviceInfoService.getApplicationPackageName()).thenReturn("com.android.test.package");
+
+            Assert.assertNull(OptimizeUtils.getPrefixedSurface(""));
+        }
+    }
+
+    @Test
+    public void testGetPrefixSurface_applicationPackageNameNotAvailable() {
+        Assert.assertEquals("unknown/testSurface", OptimizeUtils.getPrefixedSurface("testSurface"));
+    }
+
+    @Test
+    public void testIsPersonalizationDecisionResponse_valid() {
+        Event event = new Event.Builder("Test event", "com.adobe.eventType.edge", "personalization:decisions").build();
+        Assert.assertTrue(OptimizeUtils.isPersonalizationDecisionResponse(event));
+    }
+
+    @Test
+    public void testIsPersonalizationDecisionResponse_invalidType() {
+        Event event = new Event.Builder("Test event", "someType", "personalization:decisions").build();
+        Assert.assertFalse(OptimizeUtils.isPersonalizationDecisionResponse(event));
+    }
+
+    @Test
+    public void testIsPersonalizationDecisionResponse_invalidSource() {
+        Event event = new Event.Builder("Test event", "com.adobe.eventType.edge", "someSource").build();
+        Assert.assertFalse(OptimizeUtils.isPersonalizationDecisionResponse(event));
+    }
+
+    @Test
+    public void testIsValidUri_validUri() {
+        Assert.assertTrue(OptimizeUtils.isValidUri("mobileapp://com.android.test.package/testSurface"));
+    }
+
+    @Test
+    public void testIsValidUri_invalidUri() {
+        Assert.assertFalse(OptimizeUtils.isValidUri("mobileapp://com.android.test.package/myView/mySubviews/\\\\*/home.html"));
+    }
+
+    @Test
+    public void testIsValidUri_nullString() {
+        Assert.assertFalse(OptimizeUtils.isValidUri(null));
+    }
+
+    @Test
+    public void testIsValidUri_emptyString() {
+        Assert.assertFalse(OptimizeUtils.isValidUri(""));
     }
 }

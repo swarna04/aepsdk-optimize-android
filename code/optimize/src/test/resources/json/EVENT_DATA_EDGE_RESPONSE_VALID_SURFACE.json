@@ -1,0 +1,30 @@
+{
+  "payload": [
+    {
+      "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "scope": "mobileapp://com.android.test.package/myView#htmlElement",
+      "scopeDetails": {
+        "correlationID": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        "characteristics": {
+          "eventToken": "someToken"
+        },
+        "decisionProvider": "AJO",
+        "activity": {
+          "id": "dddddddd-dddd-dddd-dddd-dddddddddddd#eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
+        }
+      },
+      "items": [
+        {
+          "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "schema": "https://ns.adobe.com/personalization/html-content-item",
+          "data": {
+            "content": "<h1>This is a HTML content</h1>"
+          }
+        }
+      ]
+    }
+  ],
+  "requestEventId": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
+  "requestId": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
+  "type": "personalization:decisions"
+}

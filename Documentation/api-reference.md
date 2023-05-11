@@ -8,15 +8,18 @@ Refer to the [Getting Started Guide](getting-started.md).
 
 - [clearPropositions](#clearPropositions)
 - [extensionVersion](#extensionVersion)
-- [getPropositions](#getPropositions)
-- [onPropositionsUpdate](#onPropositionsUpdate)
+- [getPropositions](#getPropositions) - Deprecated!
+- [getPropositionsForSurfacePaths](#getPropositionsForSurfacePaths)
+- [onPropositionsUpdate](#onPropositionsUpdate) - Deprecated!
 - [registerExtension](#registerExtension)
 - [resetIdentities](#resetIdentities)
-- [updatePropositions](#updatePropositions)
+- [setPropositionsHandler](#setPropositionsHandler)
+- [updatePropositions](#updatePropositions) - Deprecated!
+- [updatePropositionsForSurfacePaths](#updatePropositionsForSurfacePaths)
 
 ## Public classes
 
-- [DecisionScope](#DecisionScope)
+- [DecisionScope](#DecisionScope) - Deprecated!
 - [Proposition](#Proposition)
 - [Offer](#Offer)
 - [OfferType](#OfferType)
@@ -107,9 +110,57 @@ Optimize.getPropositions(scopes, new AdobeCallbackWithError<Map<DecisionScope, P
 });
 ```
 
+### getPropositionsForSurfacePaths
+
+This API retrieves the previously fetched propositions, for the provided mobile surfaces, from the in-memory extension propositions cache. The completion handler is invoked with the decision propositions corresponding to the given surface strings. If a certain surface has not already been fetched prior to this API call, it will not be contained in the returned propositions.
+
+### Java
+
+#### Syntax
+
+```java
+public static void getPropositionsForSurfacePaths(@NonNull final List<String> surfacePaths, @NonNull final AdobeCallback<Map<String, Proposition>> callback)
+```
+
+* surfacePaths is a list of surface paths for which propositions are requested.
+* _callback_ `call` method is invoked with propositions map of type `Map<String, Proposition>`. If the callback is an instance of [AdobeCallbackWithError](https://developer.adobe.com/client-sdks/documentation/mobile-core/api-reference/#adobecallbackwitherror), and if the operation times out or an error occurs in retrieving propositions, the `fail` method is invoked with the appropriate [AdobeError](https://developer.adobe.com/client-sdks/documentation/mobile-core/api-reference/#adobeerror).
+
+#### Example
+
+```java
+final String surfacePath1 = "myView#htmlElement";
+final String surfacePath2 = "myView/mySubviewJson"
+
+final List<String> surfacePaths = new ArrayList<>();
+surfacePaths.add(surfacePath1);
+surfacePaths.add(surfacePath2);
+
+Optimize.getPropositionsForSurfacePaths(surfacePaths, new AdobeCallbackWithError<Map<DecisionScope, Proposition>>() {
+    @Override
+    public void fail(final AdobeError adobeError) {
+        // handle error
+    }
+
+    @Override
+    public void call(Map<String, Proposition> propositionsMap) {
+        if (propositionsMap != null && !propositionsMap.isEmpty()) {
+            // get the propositions for the given decision scopes
+            if (propositionsMap.contains(surfacePath1)) {
+                final Proposition proposition1 = propsMap.get(surfacePath1)
+                // read proposition1 offers
+            }
+            if (propositionsMap.contains(surfacePath2)) {
+                final Proposition proposition2 = propsMap.get(surfacePath2)
+                // read proposition2 offers
+            }
+        }
+    }
+});
+```
+
 ## onPropositionsUpdate
 
-This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event received from the Experience Edge Network upon a personalization query. The personalization query requests can be triggered by the `updatePropositions` API, Edge extension `sendEvent` API or launch consequence rules.
+This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event handle received from the Experience Edge Network upon a personalization query. The personalization query requests can be triggered by the `updatePropositions` API.
 
 ### Java
 
@@ -132,6 +183,38 @@ Optimize.onPropositionsUpdate(new AdobeCallbackWithError<Map<DecisionScope, Prop
 
     @Override
     public void call(final Map<DecisionScope, Proposition> propositionsMap) {
+        if (propositionsMap != null && !propositionsMap.isEmpty()) {
+            // handle propositions
+        }
+    }
+});
+```
+
+### setPropositionsHandler
+
+This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event handle received from the Experience Edge Network upon a personalization query. The personalization query requests can be triggered by the `updatePropositionsForSurfacePaths` API.
+
+### Java
+
+#### Syntax
+
+```java
+public static void setPropositionsHandler(final AdobeCallback<Map<String, Proposition>> callback)
+```
+
+* _callback_ `call` method is invoked with propositions map of type `Map<String, Proposition>`. If the callback is an instance of `AdobeCallbackWithError`, and if the operation times out or an error occurs in retrieving propositions, the `fail` method is invoked with the appropriate `AdobeError`.
+
+#### Example
+
+```java
+Optimize.setPropositionsHandler(new AdobeCallbackWithError<Map<String, Proposition>>() {
+    @Override
+    public void fail(final AdobeError adobeError) {
+        // handle error
+    }
+
+    @Override
+    public void call(final Map<String, Proposition> propositionsMap) {
         if (propositionsMap != null && !propositionsMap.isEmpty()) {
             // handle propositions
         }
@@ -194,6 +277,45 @@ decisionScopes.add(decisionScope1);
 decisionScopes.add(decisionScope2);
 
 Optimize.updatePropositions(decisionScopes, 
+                            new HashMap<String, Object>() {
+                                {
+                                    put("xdmKey", "xdmValue");
+                                }
+                            },
+                            new HashMap<String, Object>() {
+                                {
+                                    put("dataKey", "dataValue");
+                                }
+                            });
+```
+
+### updatePropositionsForSurfacePaths
+
+This API dispatches an Event for the Edge network extension to fetch decision propositions, for the provided mobile surfaces, from the decisioning services enabled in the Experience Edge. The returned decision propositions are cached in-memory in the Optimize SDK extension and can be retrieved using `getPropositionsForSurfacePaths` API.
+
+### Java
+
+#### Syntax
+
+```java
+public static void updatePropositionsForSurfacePaths(final List<String> surfacePaths, final Map<String, Object> xdm, final Map<String, Object> data)
+```
+
+* surfacePaths is a list of surface paths for which propositions need updating.
+* _xdm_ is a map containing additional xdm formatted data to be attached to the Experience Event.
+* _data_ is a map containing additional freeform data to be attached to the Experience Event.
+
+#### Example
+
+```java
+final String surfacePath1 = "myView#htmlElement";
+final String surfacePath2 = "myView/mySubviewJson"
+
+final List<String> surfacePaths = new ArrayList<>();
+surfacePaths.add(surfacePath1);
+surfacePaths.add(surfacePath2);
+
+Optimize.updatePropositionsForSurfacePaths(surfacePaths, 
                             new HashMap<String, Object>() {
                                 {
                                     put("xdmKey", "xdmValue");

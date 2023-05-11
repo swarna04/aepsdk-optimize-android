@@ -29,6 +29,7 @@ import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 /**
  * Public class containing APIs for the Optimize extension.
@@ -36,6 +37,7 @@ import androidx.annotation.Nullable;
 public class Optimize {
     public final static Class<? extends Extension> EXTENSION = OptimizeExtension.class;
     private static final String SELF_TAG = "Optimize";
+    private static boolean isPropositionsListenerRegistered = false;
 
     private Optimize() {}
 
@@ -74,6 +76,7 @@ public class Optimize {
      * @param xdm {@code Map<String, Object>} containing additional XDM-formatted data to be sent in the personalization query request.
      * @param data {@code Map<String, Object>} containing additional free-form data to be sent in the personalization query request.
      */
+    @Deprecated
     public static void updatePropositions(@NonNull final List<DecisionScope> decisionScopes,
                                           @Nullable final Map<String, Object> xdm,
                                           @Nullable final Map<String, Object> data) {
@@ -127,6 +130,7 @@ public class Optimize {
      * @param decisionScopes {@code List<DecisionScope>} containing scopes for which offers need to be requested.
      * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are retrieved from the local cache.
      */
+    @Deprecated
     public static void getPropositions(@NonNull final List<DecisionScope> decisionScopes,
                                        @NonNull final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
         if (OptimizeUtils.isNullOrEmpty(decisionScopes)) {
@@ -198,7 +202,7 @@ public class Optimize {
                         }
                     }
                     callback.call(propositionsMap);
-                } catch (DataReaderException e) {
+                } catch (final DataReaderException e) {
                     failWithError(callback, AdobeError.UNEXPECTED_ERROR);
                 }
             }
@@ -208,10 +212,11 @@ public class Optimize {
     /**
      * This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event received from the Experience Edge Network upon a personalization query.
      * <p>
-     * The personalization query requests can be triggered by the {@link Optimize#updatePropositions(List, Map, Map)} API, Edge extension {@code sendEvent(ExperienceEvent, EdgeCallback)} API or launch consequence rules.
+     * The personalization query requests can be triggered by the {@link Optimize#updatePropositions(List, Map, Map)} API.
      *
      * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are received from the Edge network.
      */
+    @Deprecated
     public static void onPropositionsUpdate(@NonNull final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
         MobileCore.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.NOTIFICATION, new AdobeCallbackWithError<Event>() {
             @Override
@@ -242,7 +247,9 @@ public class Optimize {
                     if (!propositionsMap.isEmpty()) {
                         callback.call(propositionsMap);
                     }
-                } catch (DataReaderException ignored) {}
+                } catch (final DataReaderException ex) {
+                    Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Propositions in response event received from the Experience Edge Network data contains invalid fields.");
+                }
             }
         });
     }
@@ -271,5 +278,193 @@ public class Optimize {
         if (callbackWithError != null) {
             callbackWithError.fail(error);
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Mobile Surface Support
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * This API dispatches an Event for the Edge network extension to fetch decision propositions, for the provided mobile surfaces from the decisioning Services enabled behind Experience Edge.
+     * <p>
+     * The returned decision propositions are cached in-memory in the Optimize SDK extension and can be retrieved using {@link #getPropositionsForSurfacePaths(List, AdobeCallback)} API.
+     *
+     * @param surfacePaths {@code List<String>} containing mobile surfaces.
+     * @param xdm {@code Map<String, Object>} containing additional XDM-formatted data to be sent in the personalization query request.
+     * @param data {@code Map<String, Object>} containing additional free-form data to be sent in the personalization query request.
+     */
+    public static void updatePropositionsForSurfacePaths(@NonNull final List<String> surfacePaths,
+                                          @Nullable final Map<String, Object> xdm,
+                                          @Nullable final Map<String, Object> data) {
+        if (OptimizeUtils.isNullOrEmpty(surfacePaths)) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of surface paths is null or empty.");
+            return;
+        }
+
+        final List<String> validSurfacePaths = new ArrayList<>();
+        for (final String surfacePath: surfacePaths) {
+            if (OptimizeUtils.isNullOrEmpty(surfacePath)) {
+                continue;
+            }
+            validSurfacePaths.add(surfacePath);
+        }
+
+        if (validSurfacePaths.size() == 0) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot update propositions, provided list of surface paths has no valid item.");
+            return;
+        }
+
+        final Map<String, Object> eventData = new HashMap<>();
+        eventData.put(OptimizeConstants.EventDataKeys.REQUEST_TYPE, OptimizeConstants.EventDataValues.REQUEST_TYPE_UPDATE);
+        eventData.put(OptimizeConstants.EventDataKeys.SURFACES, validSurfacePaths);
+
+        if (!OptimizeUtils.isNullOrEmpty(xdm)) {
+            eventData.put(OptimizeConstants.EventDataKeys.XDM, xdm);
+        }
+
+        if (!OptimizeUtils.isNullOrEmpty(data)) {
+            eventData.put(OptimizeConstants.EventDataKeys.DATA, data);
+        }
+
+        final Event event = new Event.Builder(OptimizeConstants.EventNames.UPDATE_PROPOSITIONS_REQUEST,
+                OptimizeConstants.EventType.OPTIMIZE,
+                OptimizeConstants.EventSource.REQUEST_CONTENT)
+                .setEventData(eventData)
+                .build();
+
+        MobileCore.dispatchEvent(event);
+    }
+
+    /**
+     * This API retrieves the previously fetched decisions for the provided mobile surfaces from the in-memory extension cache.
+     * <p>
+     * The completion handler will be invoked with the decision propositions corresponding to the given surface strings.
+     * If a certain surface has not already been fetched prior to this API call, it will not be contained in the returned propositions.
+     *
+     * @param surfacePaths {@code List<String>} containing mobile surfaces.
+     * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are retrieved from the local cache.
+     */
+    public static void getPropositionsForSurfacePaths(@NonNull final List<String> surfacePaths,
+                                       @NonNull final AdobeCallback<Map<String, Proposition>> callback) {
+        if (OptimizeUtils.isNullOrEmpty(surfacePaths)) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided list of surface paths is null or empty.");
+            failWithError(callback, AdobeError.UNEXPECTED_ERROR);
+            return;
+        }
+
+        final List<String> validSurfacePaths = new ArrayList<>();
+        for (final String surfacePath: surfacePaths) {
+            if (OptimizeUtils.isNullOrEmpty(surfacePath)) {
+                continue;
+            }
+            validSurfacePaths.add(surfacePath);
+        }
+
+        if (validSurfacePaths.size() == 0) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "Cannot get propositions, provided list of surface paths no valid item.");
+            failWithError(callback, AdobeError.UNEXPECTED_ERROR);
+            return;
+        }
+
+        final Map<String, Object> eventData = new HashMap<>();
+        eventData.put(OptimizeConstants.EventDataKeys.REQUEST_TYPE, OptimizeConstants.EventDataValues.REQUEST_TYPE_GET);
+        eventData.put(OptimizeConstants.EventDataKeys.SURFACES, validSurfacePaths);
+
+        final Event event = new Event.Builder(OptimizeConstants.EventNames.GET_PROPOSITIONS_REQUEST,
+                OptimizeConstants.EventType.OPTIMIZE,
+                OptimizeConstants.EventSource.REQUEST_CONTENT)
+                .setEventData(eventData)
+                .build();
+
+        MobileCore.dispatchEventWithResponseCallback(event, OptimizeConstants.DEFAULT_RESPONSE_CALLBACK_TIMEOUT,  new AdobeCallbackWithError<Event>() {
+            @Override
+            public void fail(final AdobeError adobeError) {
+                failWithError(callback, adobeError);
+            }
+
+            @Override
+            public void call(final Event event) {
+                try {
+                    final Map<String, Object> eventData = event.getEventData();
+                    if (OptimizeUtils.isNullOrEmpty(eventData)) {
+                        failWithError(callback, AdobeError.UNEXPECTED_ERROR);
+                        return;
+                    }
+
+                    if (eventData.containsKey(OptimizeConstants.EventDataKeys.RESPONSE_ERROR)) {
+                        final int errorCode = DataReader.getInt(eventData, OptimizeConstants.EventDataKeys.RESPONSE_ERROR);
+                        failWithError(callback, OptimizeUtils.convertToAdobeError(errorCode));
+                        return;
+                    }
+
+                    final List<Map<String, Object>> propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
+                    final Map<String, Proposition> propositionsMap = new HashMap<>();
+                    if (propositionsList != null) {
+                        for (final Map<String, Object> propositionData : propositionsList) {
+                            final Proposition proposition = Proposition.fromEventData(propositionData);
+                            if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
+                                propositionsMap.put(OptimizeUtils.retrieveSurfacePathFromScope(proposition.getScope()), proposition);
+                            }
+                        }
+                    }
+                    callback.call(propositionsMap);
+                } catch (final DataReaderException e) {
+                    failWithError(callback, AdobeError.UNEXPECTED_ERROR);
+                }
+            }
+        });
+    }
+
+    /**
+     * This API registers a permanent callback which is invoked whenever the Edge extension dispatches an Event handle,
+     * upon a personalization decisions response from the Experience Edge Network.
+     * <p>
+     * The personalization query requests can be triggered by the {@link Optimize#updatePropositionsForSurfacePaths(List, Map, Map)} API.
+     *
+     * @param callback {@code AdobeCallbackWithError<Map<String, Proposition>>} which will be invoked when decision propositions are received from the Edge network.
+     */
+    public static void setPropositionsHandler(@NonNull final AdobeCallback<Map<String, Proposition>> callback) {
+        if(!isPropositionsListenerRegistered) {
+            MobileCore.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.NOTIFICATION, new AdobeCallbackWithError<Event>() {
+                @Override
+                public void fail(final AdobeError error) {
+                }
+
+                @Override
+                public void call(final Event event) {
+                    final Map<String, Object> eventData = event.getEventData();
+                    if (OptimizeUtils.isNullOrEmpty(eventData)) {
+                        return;
+                    }
+
+                    final List<Map<String, Object>> propositionsList;
+                    try {
+                        propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
+
+                        final Map<String, Proposition> propositionsMap = new HashMap<>();
+                        if (!OptimizeUtils.isNullOrEmpty(propositionsList)) {
+                            for (final Map<String, Object> propositionData : propositionsList) {
+                                final Proposition proposition = Proposition.fromEventData(propositionData);
+                                if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
+                                    propositionsMap.put(OptimizeUtils.retrieveSurfacePathFromScope(proposition.getScope()), proposition);
+                                }
+                            }
+                        }
+
+                        if (!propositionsMap.isEmpty()) {
+                            callback.call(propositionsMap);
+                        }
+                    } catch (final DataReaderException ignored) {
+                        Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Propositions in response event received from the Experience Edge Network data contains invalid fields.");
+                    }
+                }
+            });
+            isPropositionsListenerRegistered = true;
+        }
+    }
+
+    @VisibleForTesting
+    protected static void setIsPropositionsListenerRegistered(final boolean value) {
+        isPropositionsListenerRegistered = value;
     }
 }

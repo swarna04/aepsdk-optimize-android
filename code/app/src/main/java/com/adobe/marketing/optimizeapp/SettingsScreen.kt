@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,8 +35,12 @@ import com.adobe.marketing.mobile.Assurance
 import com.adobe.marketing.optimizeapp.models.OptimizePair
 import com.adobe.marketing.optimizeapp.viewmodels.MainViewModel
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SettingsView(viewModel: MainViewModel) {
+    var expanded by remember { mutableStateOf(false) }
+    val scopeType = mutableListOf("Surfaces", "Decision Scopes")
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -54,27 +62,147 @@ fun SettingsView(viewModel: MainViewModel) {
                 Text(text = "Start Assurance Session", textAlign = TextAlign.Start, style = MaterialTheme.typography.button)
             }
 
-            // Optimize OD
-            SettingsLabel(text = "Optimize-OD", align = TextAlign.Start, textStyle = MaterialTheme.typography.subtitle1)
-            SettingsTextField(value = viewModel.textOdeText, placeholder = "Enter Encoded Decision Scope (Text)") { viewModel.textOdeText = it }
-            SettingsTextField(value = viewModel.textOdeImage, placeholder = "Enter Encoded Decision Scope (Image)") { viewModel.textOdeImage = it }
-            SettingsTextField(value = viewModel.textOdeHtml, placeholder = "Enter Encoded Decision Scope (HTML)") { viewModel.textOdeHtml = it }
-            SettingsTextField(value = viewModel.textOdeJson, placeholder = "Enter Encoded Decision Scope (JSON)") { viewModel.textOdeJson = it }
+            SettingsLabel(text = "Scope Type", align = TextAlign.Start, textStyle = MaterialTheme.typography.subtitle1)
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = {
+                    expanded = !expanded
+                },
+                modifier = Modifier.absolutePadding(left = 20.dp, right = 20.dp, top = 10.dp).fillMaxWidth()
+            ) {
+                TextField(
+                    readOnly = true,
+                    placeholder = {
+                        Text(
+                            text = "Select scope type",
+                        )
+                    },
+                    value =  viewModel.scopeType,
+                    onValueChange = { },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = expanded
+                        )
+                    },
+                    colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.White, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent),
+                    shape = RoundedCornerShape(size = 15.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = {
+                        expanded = false
+                    },
+                ) {
+                    scopeType.forEach { selectionOption ->
+                        DropdownMenuItem(onClick = {
+                                if (selectionOption != viewModel.scopeType) {
+                                    viewModel.clearCachedPropositions()
+                                }
+                                viewModel.scopeType = selectionOption
+                                expanded = false
+                            }
+                        ) {
+                            Text(text = selectionOption,
+                            )
+                        }
+                    }
+                }
+            }
 
-            // Optimize Target
-            SettingsLabel(text = "Optimize-Target", align = TextAlign.Start, textStyle = MaterialTheme.typography.subtitle1)
-            SettingsTextField(value = viewModel.textTargetMbox, placeholder = "Enter Target Mbox") { viewModel.textTargetMbox = it }
-            SettingsLabel(text = "Target Parameters - Mbox", align = TextAlign.Center, textStyle = MaterialTheme.typography.subtitle2)
-            KeyValuePairView(keyValuePairList = viewModel.targetParamsMbox)
-            SettingsLabel(text = "Target Parameters - Profile", align = TextAlign.Center, textStyle = MaterialTheme.typography.subtitle2)
-            KeyValuePairView(keyValuePairList = viewModel.targetParamsProfile)
-            SettingsLabel(text = "Target Parameters - Order", align = TextAlign.Center, textStyle = MaterialTheme.typography.subtitle2)
-            SettingsTextField(value = viewModel.textTargetOrderId, placeholder = "Enter Order Id") { viewModel.textTargetOrderId = it }
-            SettingsTextField(value = viewModel.textTargetOrderTotal, placeholder = "Enter Order Total") { viewModel.textTargetOrderTotal = it }
-            SettingsTextField(value = viewModel.textTargetPurchaseId, placeholder = "Enter Purchased Product Ids (comma-separated)") { viewModel.textTargetPurchaseId = it }
-            SettingsLabel(text = "Target Parameters - Product", align = TextAlign.Center, textStyle = MaterialTheme.typography.subtitle2)
-            SettingsTextField(value = viewModel.textTargetProductId, placeholder = "Enter Product Id") { viewModel.textTargetProductId = it }
-            SettingsTextField(value = viewModel.textTargetProductCategoryId, placeholder = "Enter Product Category id") { viewModel.textTargetProductCategoryId = it }
+            if (viewModel.scopeType == "Surfaces") {
+                // Optimize Surface
+                SettingsLabel(
+                    text = "Optimize-Surfaces",
+                    align = TextAlign.Start,
+                    textStyle = MaterialTheme.typography.subtitle1
+                )
+                SettingsTextField(
+                    value = viewModel.textSurfaceHtml,
+                    placeholder = "Enter Surface fragment (HTML)"
+                ) { viewModel.textSurfaceHtml = it }
+                SettingsTextField(
+                    value = viewModel.textSurfaceJson,
+                    placeholder = "Enter Surface fragment (JSON)"
+                ) { viewModel.textSurfaceJson = it }
+            } else if (viewModel.scopeType == "Decision Scopes") {
+
+                // Optimize OD
+                SettingsLabel(
+                    text = "Optimize-OD",
+                    align = TextAlign.Start,
+                    textStyle = MaterialTheme.typography.subtitle1
+                )
+                SettingsTextField(
+                    value = viewModel.textOdeText,
+                    placeholder = "Enter Encoded Decision Scope (Text)"
+                ) { viewModel.textOdeText = it }
+                SettingsTextField(
+                    value = viewModel.textOdeImage,
+                    placeholder = "Enter Encoded Decision Scope (Image)"
+                ) { viewModel.textOdeImage = it }
+                SettingsTextField(
+                    value = viewModel.textOdeHtml,
+                    placeholder = "Enter Encoded Decision Scope (HTML)"
+                ) { viewModel.textOdeHtml = it }
+                SettingsTextField(
+                    value = viewModel.textOdeJson,
+                    placeholder = "Enter Encoded Decision Scope (JSON)"
+                ) { viewModel.textOdeJson = it }
+
+                // Optimize Target
+                SettingsLabel(
+                    text = "Optimize-Target",
+                    align = TextAlign.Start,
+                    textStyle = MaterialTheme.typography.subtitle1
+                )
+                SettingsTextField(
+                    value = viewModel.textTargetMbox,
+                    placeholder = "Enter Target Mbox"
+                ) { viewModel.textTargetMbox = it }
+                SettingsLabel(
+                    text = "Target Parameters - Mbox",
+                    align = TextAlign.Center,
+                    textStyle = MaterialTheme.typography.subtitle2
+                )
+                KeyValuePairView(keyValuePairList = viewModel.targetParamsMbox)
+                SettingsLabel(
+                    text = "Target Parameters - Profile",
+                    align = TextAlign.Center,
+                    textStyle = MaterialTheme.typography.subtitle2
+                )
+                KeyValuePairView(keyValuePairList = viewModel.targetParamsProfile)
+                SettingsLabel(
+                    text = "Target Parameters - Order",
+                    align = TextAlign.Center,
+                    textStyle = MaterialTheme.typography.subtitle2
+                )
+                SettingsTextField(
+                    value = viewModel.textTargetOrderId,
+                    placeholder = "Enter Order Id"
+                ) { viewModel.textTargetOrderId = it }
+                SettingsTextField(
+                    value = viewModel.textTargetOrderTotal,
+                    placeholder = "Enter Order Total"
+                ) { viewModel.textTargetOrderTotal = it }
+                SettingsTextField(
+                    value = viewModel.textTargetPurchaseId,
+                    placeholder = "Enter Purchased Product Ids (comma-separated)"
+                ) { viewModel.textTargetPurchaseId = it }
+                SettingsLabel(
+                    text = "Target Parameters - Product",
+                    align = TextAlign.Center,
+                    textStyle = MaterialTheme.typography.subtitle2
+                )
+                SettingsTextField(
+                    value = viewModel.textTargetProductId,
+                    placeholder = "Enter Product Id"
+                ) { viewModel.textTargetProductId = it }
+                SettingsTextField(
+                    value = viewModel.textTargetProductCategoryId,
+                    placeholder = "Enter Product Category id"
+                ) { viewModel.textTargetProductCategoryId = it }
+            }
             SettingsLabel(text = "About", align = TextAlign.Start, textStyle = MaterialTheme.typography.subtitle1)
             VersionLabel(viewModel.getOptimizeExtensionVersion())
         }

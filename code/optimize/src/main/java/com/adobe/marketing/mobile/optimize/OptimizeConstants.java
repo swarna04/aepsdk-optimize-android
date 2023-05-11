@@ -26,6 +26,7 @@ class OptimizeConstants {
     static final String ITEM_COUNT = "itemCount";
     static final String XDM_ITEM_COUNT = "xdm:itemCount";
     static final String XDM_NAME = "xdm:name";
+    static final String SURFACE_BASE = "mobileapp://";
 
     static final String ERROR_UNKNOWN = "unknown";
 
@@ -73,6 +74,8 @@ class OptimizeConstants {
         static final String PROPOSITIONS = "propositions";
         static final String RESPONSE_ERROR = "responseerror";
         static final String PROPOSITION_INTERACTIONS = "propositioninteractions";
+        static final String SURFACES = "surfaces";
+        static final String REQUEST_EVENT_ID = "requestEventId";
 
         private EventDataKeys() {}
     }
@@ -131,6 +134,7 @@ class OptimizeConstants {
         static final String QUERY_PERSONALIZATION = "personalization";
         static final String SCHEMAS = "schemas";
         static final String DECISION_SCOPES = "decisionScopes";
+        static final String SURFACES = "surfaces";
         static final String DATA = "data";
         static final String DATASET_ID = "datasetId";
         static final String EXPERIENCE_EVENT_TYPE = "eventType";

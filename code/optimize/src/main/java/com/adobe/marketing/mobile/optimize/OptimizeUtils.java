@@ -15,8 +15,13 @@ package com.adobe.marketing.mobile.optimize;
 import android.util.Base64;
 
 import com.adobe.marketing.mobile.AdobeError;
+import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.services.ServiceProvider;
+import com.adobe.marketing.mobile.util.StringUtils;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -86,7 +91,7 @@ class OptimizeUtils {
         try {
             output = new String(Base64.decode(str, Base64.DEFAULT));
         } catch(final IllegalArgumentException ex) {
-            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, String.format("Base64 decode failed for the given string (%s) with exception: %s", str, ex.getLocalizedMessage()));
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Base64 decode failed for the given string (%s) with exception: %s", str, ex.getLocalizedMessage());
         }
         return output;
     }
@@ -116,5 +121,82 @@ class OptimizeUtils {
                 error = AdobeError.UNEXPECTED_ERROR;
         }
         return error;
+    }
+
+    /**
+     * Returns the mobile app surface
+     *
+     * @return {@link String} containing the mobile app surface
+     */
+    static String getMobileAppSurface() {
+        final String appSurface = ServiceProvider.getInstance().getDeviceInfoService().getApplicationPackageName();
+        if (OptimizeUtils.isNullOrEmpty(appSurface)) {
+            return "unknown";
+        }
+        return OptimizeConstants.SURFACE_BASE + appSurface;
+    }
+
+    /**
+     * Return surface prefixed with mobile app surface
+     *
+     * @param surface {@link String} the surface name
+     * @return {@link String} surface prefixed with mobile app surface if valid, or null otherwise
+     */
+    static String getPrefixedSurface(final String surface) {
+        if (OptimizeUtils.isNullOrEmpty(surface)) {
+            return null;
+        }
+
+        final String mobileAppSurface = getMobileAppSurface();
+        if (OptimizeUtils.isNullOrEmpty(mobileAppSurface)) {
+            return null;
+        }
+
+        return mobileAppSurface + "/" + surface;
+    }
+
+    /**
+     * Check if given event is a Personalization Decision Response Event
+     * @param event instance of {@link Event}
+     * @return true if event is a Personalization Decision Response event, false otherwise
+     */
+    static boolean isPersonalizationDecisionResponse(final Event event) {
+        return OptimizeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
+                OptimizeConstants.EventSource.EDGE_PERSONALIZATION_DECISIONS.equalsIgnoreCase(event.getSource());
+    }
+
+    /**
+     * Checks if provided string is a valid URI
+     * @param uriString {@link String} input string
+     * @return true if inputted string is a valid URI, false otherwise
+     */
+    static boolean isValidUri(final String uriString) {
+        if (StringUtils.isNullOrEmpty(uriString)) {
+            return false;
+        }
+        try {
+            new URI(uriString);
+            return true;
+        } catch (final URISyntaxException ex) {
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "Given string %s is not a valid URI, exception: %s", uriString, ex.getLocalizedMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Retrieves surface path from the provided scope string.
+     *
+     * @param scope {@link String} containing the surface URI to extract surface path from.
+     * @return surface path extracted from input string
+     */
+    static String retrieveSurfacePathFromScope(final String scope) {
+        if (OptimizeUtils.isNullOrEmpty(scope)) {
+            return scope;
+        }
+        final String mobileAppSurface = OptimizeUtils.getMobileAppSurface();
+        if (!OptimizeUtils.isNullOrEmpty(mobileAppSurface) && scope.startsWith(mobileAppSurface)) {
+            return scope.substring(mobileAppSurface.length()+1);
+        }
+        return scope;
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -43,7 +44,6 @@ import com.adobe.marketing.mobile.optimize.DecisionScope
 import com.adobe.marketing.mobile.optimize.Offer
 import com.adobe.marketing.mobile.optimize.OfferType
 import com.adobe.marketing.optimizeapp.viewmodels.MainViewModel
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -71,17 +71,20 @@ fun OffersView(viewModel: MainViewModel) {
                     .fillMaxHeight(fraction = 0.85f)
                     .verticalScroll(state = rememberScrollState())
             ) {
-
-                OffersSectionText(sectionName = "Text Offers")
-                TextOffers()
-                OffersSectionText(sectionName = "Image Offers")
-                ImageOffers()
+                if(viewModel.scopeType == "Decision Scopes") {
+                    OffersSectionText(sectionName = "Text Offers")
+                    TextOffers()
+                    OffersSectionText(sectionName = "Image Offers")
+                    ImageOffers()
+                }
                 OffersSectionText(sectionName = "HTML Offers")
                 HTMLOffers()
                 OffersSectionText(sectionName = "JSON Offers")
                 JSONOffers()
-                OffersSectionText(sectionName = "Target Offers")
-                TargetOffersView()
+                if(viewModel.scopeType == "Decision Scopes") {
+                    OffersSectionText(sectionName = "Target Offers")
+                    TargetOffersView()
+                }
             }
         } else {
             LazyColumn(
@@ -132,92 +135,172 @@ fun OffersView(viewModel: MainViewModel) {
                 .padding(horizontal = 10.dp)
                 .fillMaxWidth()
                 .fillMaxHeight()
-                ) {
-                Button(modifier = Modifier.align(Alignment.CenterStart), onClick = {
-                    viewModel.updateDecisionScopes()
-                    val decisionScopeList = arrayListOf<DecisionScope>()
-                    viewModel.textDecisionScope?.also { decisionScopeList.add(it) }
-                    viewModel.imageDecisionScope?.also { decisionScopeList.add(it) }
-                    viewModel.htmlDecisionScope?.also { decisionScopeList.add(it) }
-                    viewModel.jsonDecisionScope?.also { decisionScopeList.add(it) }
-                    viewModel.targetMboxDecisionScope?.also { decisionScopeList.add(it) }
+            ) {
+                if (viewModel.scopeType == "Decision Scopes") {
+                    Row(Modifier.fillMaxWidth().align(Center)) {
+                        Button(modifier = Modifier.weight(1.0f), onClick = {
+                            viewModel.updateDecisionScopes()
+                            val decisionScopeList = arrayListOf<DecisionScope>()
+                            viewModel.textDecisionScope?.also { decisionScopeList.add(it) }
+                            viewModel.imageDecisionScope?.also { decisionScopeList.add(it) }
+                            viewModel.htmlDecisionScope?.also { decisionScopeList.add(it) }
+                            viewModel.jsonDecisionScope?.also { decisionScopeList.add(it) }
+                            viewModel.targetMboxDecisionScope?.also { decisionScopeList.add(it) }
 
-                    // Send a custom Identity in IdentityMap as primary identifier to Edge network in personalization query request.
-                    val identityMap = IdentityMap()
-                    identityMap.addItem(IdentityItem("1111", AuthenticatedState.AUTHENTICATED, true), "userCRMID")
-                    Identity.updateIdentities(identityMap)
+                            // Send a custom Identity in IdentityMap as primary identifier to Edge network in personalization query request.
+                            val identityMap = IdentityMap()
+                            identityMap.addItem(
+                                IdentityItem(
+                                    "1111",
+                                    AuthenticatedState.AUTHENTICATED,
+                                    true
+                                ), "userCRMID"
+                            )
+                            Identity.updateIdentities(identityMap)
 
-                    val data = mutableMapOf<String, Any>()
-                    val targetParams = mutableMapOf<String, String>()
+                            val data = mutableMapOf<String, Any>()
+                            val targetParams = mutableMapOf<String, String>()
 
-                    if(viewModel.targetMboxDecisionScope?.name?.isNotEmpty() == true) {
-                        viewModel.targetParamsMbox.forEach {
-                            if (it.key.isNotEmpty() && it.value.isNotEmpty()) {
-                                targetParams[it.key] = it.value
+                            if (viewModel.targetMboxDecisionScope?.name?.isNotEmpty() == true) {
+                                viewModel.targetParamsMbox.forEach {
+                                    if (it.key.isNotEmpty() && it.value.isNotEmpty()) {
+                                        targetParams[it.key] = it.value
+                                    }
+                                }
+
+                                viewModel.targetParamsProfile.forEach {
+                                    if (!it.key.isNullOrEmpty() && !it.value.isNullOrEmpty()) {
+                                        targetParams[it.key] = it.value
+                                    }
+                                }
+
+                                if (viewModel.isValidOrder) {
+                                    targetParams["orderId"] = viewModel.textTargetOrderId
+                                    targetParams["orderTotal"] = viewModel.textTargetOrderTotal
+                                    targetParams["purchasedProductIds"] =
+                                        viewModel.textTargetPurchaseId
+                                }
+
+                                if (viewModel.isValidProduct) {
+                                    targetParams["productId"] = viewModel.textTargetProductId
+                                    targetParams["categoryId"] =
+                                        viewModel.textTargetProductCategoryId
+                                }
+
+                                if (targetParams.isNotEmpty()) {
+                                    data["__adobe"] =
+                                        mapOf<String, Any>(Pair("target", targetParams))
+                                }
                             }
+                            data["dataKey"] = "5678"
+                            viewModel.updatePropositions(
+                                decisionScopes = decisionScopeList,
+                                xdm = mapOf(Pair("xdmKey", "1234")),
+                                data = data
+                            )
+                        }) {
+                            Text(
+                                text = "Update \n Propositions",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.button
+                            )
                         }
 
-                        viewModel.targetParamsProfile.forEach {
-                            if(!it.key.isNullOrEmpty() && !it.value.isNullOrEmpty()){
-                                targetParams[it.key] = it.value
-                            }
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Button(modifier = Modifier.weight(1.0f), onClick = {
+                            viewModel.updateDecisionScopes()
+                            val decisionScopeList = arrayListOf<DecisionScope>()
+                            viewModel.textDecisionScope?.also { decisionScopeList.add(it) }
+                            viewModel.imageDecisionScope?.also { decisionScopeList.add(it) }
+                            viewModel.htmlDecisionScope?.also { decisionScopeList.add(it) }
+                            viewModel.jsonDecisionScope?.also { decisionScopeList.add(it) }
+                            viewModel.targetMboxDecisionScope?.also { decisionScopeList.add(it) }
+
+                            viewModel.getPropositions(decisionScopes = decisionScopeList)
+                        }) {
+                            Text(
+                                text = "Get \n Propositions",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.button
+                            )
                         }
 
-                        if(viewModel.isValidOrder){
-                            targetParams["orderId"] = viewModel.textTargetOrderId
-                            targetParams["orderTotal"] = viewModel.textTargetOrderTotal
-                            targetParams["purchasedProductIds"] = viewModel.textTargetPurchaseId
-                        }
+                        Spacer(modifier = Modifier.width(10.dp))
 
-                        if(viewModel.isValidProduct){
-                            targetParams["productId"] = viewModel.textTargetProductId
-                        targetParams["categoryId"] = viewModel.textTargetProductCategoryId
-                        }
-
-                        if (targetParams.isNotEmpty()) {
-                            data["__adobe"] = mapOf<String, Any>(Pair("target", targetParams))
+                        Button(modifier = Modifier.weight(1.0f), onClick = {
+                            viewModel.clearCachedPropositions()
+                        }) {
+                            Text(
+                                text = "Clear \n Propositions",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.button
+                            )
                         }
                     }
-                    data["dataKey"] = "5678"
-                    viewModel.updatePropositions(
-                        decisionScopes = decisionScopeList,
-                        xdm = mapOf(Pair("xdmKey", "1234")),
-                        data = data
-                    )
-                }) {
-                    Text(
-                        text = "Update \n Propositions",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.button
-                    )
-                }
+                } else if (viewModel.scopeType == "Surfaces") {
+                    Row(Modifier.fillMaxWidth().align(Center)) {
+                        Button(modifier = Modifier.weight(1.0f), onClick = {
+                            viewModel.updateDecisionScopes()
+                            val surfaceList = arrayListOf<String>()
+                            viewModel.htmlSurfaceString?.also { surfaceList.add(it) }
+                            viewModel.jsonSurfaceString?.also { surfaceList.add(it) }
 
-                Button(modifier = Modifier.align(Alignment.Center), onClick = {
-                    viewModel.updateDecisionScopes()
-                    val decisionScopeList = arrayListOf<DecisionScope>()
-                    viewModel.textDecisionScope?.also { decisionScopeList.add(it) }
-                    viewModel.imageDecisionScope?.also { decisionScopeList.add(it) }
-                    viewModel.htmlDecisionScope?.also { decisionScopeList.add(it) }
-                    viewModel.jsonDecisionScope?.also { decisionScopeList.add(it) }
-                    viewModel.targetMboxDecisionScope?.also { decisionScopeList.add(it) }
+                            // Send a custom Identity in IdentityMap as primary identifier to Edge network in personalization query request.
+                            val identityMap = IdentityMap()
+                            identityMap.addItem(
+                                IdentityItem(
+                                    "1111",
+                                    AuthenticatedState.AUTHENTICATED,
+                                    true
+                                ), "userCRMID"
+                            )
+                            Identity.updateIdentities(identityMap)
 
-                    viewModel.getPropositions(decisionScopes = decisionScopeList)
-                }) {
-                    Text(
-                        text = "Get \n Propositions",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.button
-                    )
-                }
+                            val data = mutableMapOf<String, Any>()
+                            data["dataKey"] = "5678"
+                            viewModel.updatePropositionsForSurfacePaths(
+                                surfaceList = surfaceList,
+                                xdm = mapOf(Pair("xdmKey", "1234")),
+                                data = data
+                            )
+                        }) {
+                            Text(
+                                text = "Update Propositions\nFor Surfaces",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.button
+                            )
+                        }
 
-                Button(modifier = Modifier.align(Alignment.CenterEnd), onClick = {
-                    viewModel.clearCachedPropositions()
-                }) {
-                    Text(
-                        text = "Clear \n Propositions",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.button
-                    )
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Button(modifier = Modifier.weight(1.0f), onClick = {
+                            viewModel.updateDecisionScopes()
+                            val surfaceList = arrayListOf<String>()
+                            viewModel.htmlSurfaceString?.also { surfaceList.add(it) }
+                            viewModel.jsonSurfaceString?.also { surfaceList.add(it) }
+
+                            viewModel.getPropositionsForSurfacePaths(surfaceList = surfaceList)
+                        }) {
+                            Text(
+                                text = "Get Propositions\nFor Surfaces",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.button
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Button(modifier = Modifier.weight(1.0f), onClick = {
+                            viewModel.clearCachedPropositions()
+                        }) {
+                            Text(
+                                text = "Clear \n Propositions",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.button
+                            )
+                        }
+                    }
                 }
             }
         }

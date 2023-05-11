@@ -34,7 +34,8 @@ import androidx.annotation.VisibleForTesting;
 class OptimizeExtension extends Extension {
 
     private static final String SELF_TAG = "OptimizeExtension";
-    private Map<DecisionScope, Proposition> cachedPropositions;
+    private String personalizationRequestEventId = "";
+    private Map<String, Proposition> cachedPropositions;
 
     // List containing the schema strings for the proposition items supported by the SDK, sent in the personalization query request.
     final static List<String> supportedSchemas = Arrays.asList(
@@ -185,12 +186,32 @@ class OptimizeExtension extends Extension {
         }
 
         try {
+            List<String> validDecisionScopeNames = new ArrayList<>();
+            List<String> validSurfaces = new ArrayList<>();
+
             final List<Map<String, Object>> decisionScopesData = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.DECISION_SCOPES);
-            final List<String> validScopeNames = retrieveValidDecisionScopes(decisionScopesData);
-            if (OptimizeUtils.isNullOrEmpty(validScopeNames)) {
+            final List<String> surfaces = DataReader.getStringList(eventData, OptimizeConstants.EventDataKeys.SURFACES);
+
+            if (!OptimizeUtils.isNullOrEmpty(decisionScopesData)) {
+                validDecisionScopeNames = retrieveValidDecisionScopes(decisionScopesData);
+                if (OptimizeUtils.isNullOrEmpty(validDecisionScopeNames)) {
+                    Log.debug(OptimizeConstants.LOG_TAG,
+                            SELF_TAG,
+                            "handleUpdatePropositions - Cannot process the update propositions request event, decision scopes in the event data are either not present or empty.");
+                    return;
+                }
+            } else if (!OptimizeUtils.isNullOrEmpty(surfaces)) {
+                validSurfaces = retrieveValidSurfaces(surfaces);
+                if (OptimizeUtils.isNullOrEmpty(validSurfaces)) {
+                    Log.debug(OptimizeConstants.LOG_TAG,
+                            SELF_TAG,
+                            "handleUpdatePropositions - Cannot process the update propositions request event, surface paths in the event data are either not present or empty.");
+                    return;
+                }
+            } else {
                 Log.debug(OptimizeConstants.LOG_TAG,
                         SELF_TAG,
-                        "handleUpdatePropositions - Cannot process the update propositions request event, provided list of decision scopes has no valid scope.");
+                        "handleUpdatePropositions - Cannot process the update propositions request event, surfaces or decision scopes in the event data are either not present or empty.");
                 return;
             }
 
@@ -199,7 +220,8 @@ class OptimizeExtension extends Extension {
             // Add query
             final Map<String, Object> queryPersonalization = new HashMap<>();
             queryPersonalization.put(OptimizeConstants.JsonKeys.SCHEMAS, supportedSchemas);
-            queryPersonalization.put(OptimizeConstants.JsonKeys.DECISION_SCOPES, validScopeNames);
+            queryPersonalization.put(OptimizeConstants.JsonKeys.DECISION_SCOPES, validDecisionScopeNames);
+            queryPersonalization.put(OptimizeConstants.JsonKeys.SURFACES, validSurfaces);
             final Map<String, Object> query = new HashMap<>();
             query.put(OptimizeConstants.JsonKeys.QUERY_PERSONALIZATION, queryPersonalization);
             edgeEventData.put(OptimizeConstants.JsonKeys.QUERY, query);
@@ -239,6 +261,10 @@ class OptimizeExtension extends Extension {
                     .setEventData(edgeEventData)
                     .build();
 
+            // In AEP Response Event handle, `requestEventId` corresponds to the UUID for the Edge request.
+            // Storing the request event UUID to compare and process only the anticipated response in the extension.
+            personalizationRequestEventId = edgeEvent.getUniqueIdentifier();
+
             getApi().dispatch(edgeEvent);
         } catch (final Exception e) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG,
@@ -263,12 +289,13 @@ class OptimizeExtension extends Extension {
 
         try {
             final Map<String, Object> eventData = event.getEventData();
-
-            // Verify the Edge response event handle
-            final String edgeEventHandleType = DataReader.getString(eventData, OptimizeConstants.Edge.EVENT_HANDLE);
-            if (!OptimizeConstants.Edge.EVENT_HANDLE_TYPE_PERSONALIZATION.equals(edgeEventHandleType)) {
+            final String requestEventId = DataReader.optString(eventData, OptimizeConstants.EventDataKeys.REQUEST_EVENT_ID, null);
+            if (!OptimizeUtils.isPersonalizationDecisionResponse(event) ||
+                    !personalizationRequestEventId.equalsIgnoreCase(requestEventId)) {
                 Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
-                        "handleEdgeResponse - Cannot process the Edge personalization:decisions event, event handle type is not personalization:decisions.");
+                        "handleEdgeResponse - personalization request id %s requestEventId %s", personalizationRequestEventId, requestEventId);
+                Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
+                        "handleEdgeResponse - Ignoring Edge response event, either response handle is not personalization:decisions, or the response is not for a request the extension issued.");
                 return;
             }
 
@@ -278,12 +305,12 @@ class OptimizeExtension extends Extension {
                 return;
             }
 
-            final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
+            final Map<String, Proposition> propositionsMap = new HashMap<>();
             for (final Map<String, Object> propositionData : payload) {
                 final Proposition proposition = Proposition.fromEventData(propositionData);
                 if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getOffers())) {
-                    final DecisionScope scope = new DecisionScope(proposition.getScope());
-                    propositionsMap.put(scope, proposition);
+                    System.out.println("Proposition :" + proposition);
+                    propositionsMap.put(proposition.getScope(), proposition);
                 }
             }
 
@@ -350,22 +377,37 @@ class OptimizeExtension extends Extension {
         final Map<String, Object> eventData = event.getEventData();
         
         try {
+            final List<Map<String, Object>> propositionsList = new ArrayList<>();
+
             final List<Map<String, Object>> decisionScopesData = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.DECISION_SCOPES);
             final List<String> validScopeNames = retrieveValidDecisionScopes(decisionScopesData);
-            if (OptimizeUtils.isNullOrEmpty(validScopeNames)) {
+
+            final List<String> surfaces = DataReader.getStringList(eventData, OptimizeConstants.EventDataKeys.SURFACES);
+
+            if (!OptimizeUtils.isNullOrEmpty(validScopeNames)) {
+                for (final String scopeName : validScopeNames) {
+                    if (cachedPropositions.containsKey(scopeName)) {
+                        final Proposition proposition = cachedPropositions.get(scopeName);
+                        if (proposition != null) {
+                            propositionsList.add(proposition.toEventData());
+                        }
+                    }
+                }
+            } else if (!OptimizeUtils.isNullOrEmpty(surfaces)) {
+                for (final String surface : surfaces) {
+                    final String prefixedSurface = OptimizeUtils.getPrefixedSurface(surface);
+                    if (OptimizeUtils.isValidUri(prefixedSurface) && cachedPropositions.containsKey(prefixedSurface)) {
+                        final Proposition proposition = cachedPropositions.get(prefixedSurface);
+                        if (proposition != null) {
+                            propositionsList.add(proposition.toEventData());
+                        }
+                    }
+                }
+            } else {
                 Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
-                        "handleGetPropositions - Cannot process the get propositions request event, provided list of decision scopes has no valid scope.");
+                        "handleGetPropositions - Cannot process the get propositions request event, provided list of decision scopes or surfaces has no valid scope.");
                 getApi().dispatch(createResponseEventWithError(event, AdobeError.UNEXPECTED_ERROR));
                 return;
-            }
-
-            final List<Map<String, Object>> propositionsList = new ArrayList<>();
-            for (final String scopeName : validScopeNames) {
-                final DecisionScope scope = new DecisionScope(scopeName);
-                if (cachedPropositions.containsKey(scope)) {
-                    final Proposition proposition = cachedPropositions.get(scope);
-                    propositionsList.add(proposition.toEventData());
-                }
             }
 
             final Map<String, Object> responseEventData = new HashMap<>();
@@ -481,21 +523,42 @@ class OptimizeExtension extends Extension {
             return null;
         }
 
-        final List<String> validScopeNames = new ArrayList<>();
+        final List<String> validDecisionScopeNames = new ArrayList<>();
         for (final Map<String, Object> scopeData: decisionScopesData) {
             final DecisionScope scope = DecisionScope.fromEventData(scopeData);
             if (scope == null || !scope.isValid()) {
                 continue;
             }
-            validScopeNames.add(scope.getName());
+            validDecisionScopeNames.add(scope.getName());
         }
 
-        if (validScopeNames.size() == 0) {
+        if (validDecisionScopeNames.size() == 0) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidDecisionScopes - No valid decision scopes are retrieved, provided list of decision scopes has no valid scope.");
             return null;
         }
 
-        return validScopeNames;
+        return validDecisionScopeNames;
+    }
+
+    private List<String> retrieveValidSurfaces(final List<String> surfaces) {
+        if (OptimizeUtils.isNullOrEmpty(surfaces)) {
+            Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidSurfaces - provided list of surfaces is null or empty.");
+            return null;
+        }
+        final List<String> validSurfaceNames = new ArrayList<>();
+        for(final String surface: surfaces) {
+            final String prefixedSurface = OptimizeUtils.getPrefixedSurface(surface);
+            if (OptimizeUtils.isValidUri(prefixedSurface)) {
+                validSurfaceNames.add(prefixedSurface);
+            }
+        }
+
+        if (validSurfaceNames.size() == 0) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidSurfaces - provided list of surfaces has no valid surface.");
+            return null;
+        }
+
+        return validSurfaceNames;
     }
 
     /**
@@ -517,12 +580,18 @@ class OptimizeExtension extends Extension {
     }
 
     @VisibleForTesting
-    Map<DecisionScope, Proposition> getCachedPropositions() {
+    Map<String, Proposition> getCachedPropositions() {
         return cachedPropositions;
     }
 
     @VisibleForTesting
-    void setCachedPropositions(final Map<DecisionScope, Proposition> cachedPropositions) {
+    void setCachedPropositions(final Map<String, Proposition> cachedPropositions) {
         this.cachedPropositions = cachedPropositions;
     }
+
+    @VisibleForTesting
+    void setPersonalizationRequestEventId(final String id) {
+        personalizationRequestEventId = id;
+    }
+
 }

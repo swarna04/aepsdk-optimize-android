@@ -230,10 +230,11 @@ public class OfferTests {
     }
 
     @Test
-    public void testFromEventData_invalidOfferNoFormat() throws Exception {
-        Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_INVALID_MISSING_FORMAT.json"), HashMap.class);
+    public void testFromEventData_validOfferNoFormat() throws Exception {
+        Map<String, Object> offerData = new ObjectMapper().readValue(getClass().getClassLoader().getResource("json/OFFER_VALID_NO_FORMAT.json"), HashMap.class);
         final Offer offer = Offer.fromEventData(offerData);
-        Assert.assertNull(offer);
+        Assert.assertNotNull(offer);
+        Assert.assertEquals("This is a plain text content!", offer.getContent());
     }
 
     @Test
