@@ -110,7 +110,7 @@ Optimize.getPropositions(scopes, new AdobeCallbackWithError<Map<DecisionScope, P
 });
 ```
 
-### getPropositionsForSurfacePaths
+## getPropositionsForSurfacePaths
 
 This API retrieves the previously fetched propositions, for the provided mobile surfaces, from the in-memory extension propositions cache. The completion handler is invoked with the decision propositions corresponding to the given surface strings. If a certain surface has not already been fetched prior to this API call, it will not be contained in the returned propositions.
 
@@ -122,7 +122,7 @@ This API retrieves the previously fetched propositions, for the provided mobile 
 public static void getPropositionsForSurfacePaths(@NonNull final List<String> surfacePaths, @NonNull final AdobeCallback<Map<String, Proposition>> callback)
 ```
 
-* surfacePaths is a list of surface paths for which propositions are requested.
+* _surfacePaths_ is a list of surface paths for which propositions are requested.
 * _callback_ `call` method is invoked with propositions map of type `Map<String, Proposition>`. If the callback is an instance of [AdobeCallbackWithError](https://developer.adobe.com/client-sdks/documentation/mobile-core/api-reference/#adobecallbackwitherror), and if the operation times out or an error occurs in retrieving propositions, the `fail` method is invoked with the appropriate [AdobeError](https://developer.adobe.com/client-sdks/documentation/mobile-core/api-reference/#adobeerror).
 
 #### Example
@@ -190,7 +190,7 @@ Optimize.onPropositionsUpdate(new AdobeCallbackWithError<Map<DecisionScope, Prop
 });
 ```
 
-### setPropositionsHandler
+## setPropositionsHandler
 
 This API registers a permanent callback which is invoked whenever the Edge extension dispatches a response Event handle received from the Experience Edge Network upon a personalization query. The personalization query requests can be triggered by the `updatePropositionsForSurfacePaths` API.
 
@@ -289,7 +289,7 @@ Optimize.updatePropositions(decisionScopes,
                             });
 ```
 
-### updatePropositionsForSurfacePaths
+## updatePropositionsForSurfacePaths
 
 This API dispatches an Event for the Edge network extension to fetch decision propositions, for the provided mobile surfaces, from the decisioning services enabled in the Experience Edge. The returned decision propositions are cached in-memory in the Optimize SDK extension and can be retrieved using `getPropositionsForSurfacePaths` API.
 
@@ -301,7 +301,7 @@ This API dispatches an Event for the Edge network extension to fetch decision pr
 public static void updatePropositionsForSurfacePaths(final List<String> surfacePaths, final Map<String, Object> xdm, final Map<String, Object> data)
 ```
 
-* surfacePaths is a list of surface paths for which propositions need updating.
+* _surfacePaths_ is a list of surface paths for which propositions need updating.
 * _xdm_ is a map containing additional xdm formatted data to be attached to the Experience Event.
 * _data_ is a map containing additional freeform data to be attached to the Experience Event.
 
