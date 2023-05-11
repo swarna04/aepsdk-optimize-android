@@ -32,7 +32,6 @@ import androidx.constraintlayout.compose.ChainStyle
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import com.adobe.marketing.mobile.Assurance
-import com.adobe.marketing.mobile.optimize.Optimize
 import com.adobe.marketing.optimizeapp.models.OptimizePair
 import com.adobe.marketing.optimizeapp.viewmodels.MainViewModel
 
@@ -78,7 +77,7 @@ fun SettingsView(viewModel: MainViewModel) {
                             text = "Select Type",
                         )
                     },
-                    value =  viewModel.type,
+                    value =  viewModel.propositionType,
                     onValueChange = { },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(
@@ -97,10 +96,10 @@ fun SettingsView(viewModel: MainViewModel) {
                 ) {
                     propositionType.forEach { selectionOption ->
                         DropdownMenuItem(onClick = {
-                                if (selectionOption != viewModel.type) {
+                                if (selectionOption != viewModel.propositionType) {
                                     viewModel.clearCachedPropositions()
                                 }
-                                viewModel.type = selectionOption
+                                viewModel.propositionType = selectionOption
                                 expanded = false
                             }
                         ) {
@@ -111,7 +110,7 @@ fun SettingsView(viewModel: MainViewModel) {
                 }
             }
 
-            if (viewModel.type == "Custom Content") {
+            if (viewModel.propositionType == "Custom Content") {
                 // Optimize Surface
                 SettingsLabel(
                     text = "Optimize-Surfaces",
@@ -126,7 +125,7 @@ fun SettingsView(viewModel: MainViewModel) {
                     value = viewModel.textSurfaceJson,
                     placeholder = "Enter Surface fragment (JSON)"
                 ) { viewModel.textSurfaceJson = it }
-            } else if (viewModel.type == "ODE") {
+            } else if (viewModel.propositionType == "ODE") {
 
                 // Optimize OD
                 SettingsLabel(

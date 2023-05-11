@@ -28,7 +28,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
-import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -45,7 +44,6 @@ import com.adobe.marketing.mobile.optimize.DecisionScope
 import com.adobe.marketing.mobile.optimize.Offer
 import com.adobe.marketing.mobile.optimize.OfferType
 import com.adobe.marketing.optimizeapp.viewmodels.MainViewModel
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -73,7 +71,7 @@ fun OffersView(viewModel: MainViewModel) {
                     .fillMaxHeight(fraction = 0.85f)
                     .verticalScroll(state = rememberScrollState())
             ) {
-                if(viewModel.type == "ODE") {
+                if(viewModel.propositionType == "ODE") {
                     OffersSectionText(sectionName = "Text Offers")
                     TextOffers()
                     OffersSectionText(sectionName = "Image Offers")
@@ -83,7 +81,7 @@ fun OffersView(viewModel: MainViewModel) {
                 HTMLOffers()
                 OffersSectionText(sectionName = "JSON Offers")
                 JSONOffers()
-                if(viewModel.type == "ODE") {
+                if(viewModel.propositionType == "ODE") {
                     OffersSectionText(sectionName = "Target Offers")
                     TargetOffersView()
                 }
@@ -138,7 +136,7 @@ fun OffersView(viewModel: MainViewModel) {
                 .fillMaxWidth()
                 .fillMaxHeight()
             ) {
-                if (viewModel.type == "ODE") {
+                if (viewModel.propositionType == "ODE") {
                     Row(Modifier.fillMaxWidth().align(Center)) {
                         Button(modifier = Modifier.weight(1.0f), onClick = {
                             viewModel.updateDecisionScopes()
@@ -240,7 +238,7 @@ fun OffersView(viewModel: MainViewModel) {
                             )
                         }
                     }
-                } else if (viewModel.type == "Custom Content") {
+                } else if (viewModel.propositionType == "Custom Content") {
                     Row(Modifier.fillMaxWidth().align(Center)) {
                         Button(modifier = Modifier.weight(1.0f), onClick = {
                             viewModel.updateDecisionScopes()
