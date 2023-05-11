@@ -105,9 +105,9 @@ class MainViewModel: ViewModel() {
     }
 
     /**
-     * Calls the Optimize SDK API to get the Propositions see [Optimize.getPropositions]
+     * Calls the Optimize SDK API to get the Propositions see [Optimize.getPropositionsForSurfacePaths]
      *
-     * @param [decisionScopes] a [List] of [DecisionScope]
+     * @param [surfaceList] a [List] of [String]
      */
     fun getPropositionsForSurfacePaths(surfaceList: List<String>) {
         propositionStateMap.clear()
