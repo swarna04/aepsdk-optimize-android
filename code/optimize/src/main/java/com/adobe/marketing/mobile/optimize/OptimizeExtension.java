@@ -263,7 +263,7 @@ class OptimizeExtension extends Extension {
 
             // In AEP Response Event handle, `requestEventId` corresponds to the UUID for the Edge request.
             // Storing the request event UUID to compare and process only the anticipated response in the extension.
-            personalizationRequestEventId = event.getUniqueIdentifier();
+            personalizationRequestEventId = edgeEvent.getUniqueIdentifier();
 
             getApi().dispatch(edgeEvent);
         } catch (final Exception e) {
@@ -293,16 +293,9 @@ class OptimizeExtension extends Extension {
             if (!OptimizeUtils.isPersonalizationDecisionResponse(event) ||
                     !personalizationRequestEventId.equalsIgnoreCase(requestEventId)) {
                 Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
-                        "handleEdgeResponse - Ignoring Edge response event, either response handle is not personalization:decisions, or the response is not for a request the extension issued.");
-                return;
-            }
-
-
-            // Verify the Edge response event handle
-            final String edgeEventHandleType = DataReader.getString(eventData, OptimizeConstants.Edge.EVENT_HANDLE);
-            if (!OptimizeConstants.Edge.EVENT_HANDLE_TYPE_PERSONALIZATION.equals(edgeEventHandleType)) {
+                        "handleEdgeResponse - personalization request id %s requestEventId %s", personalizationRequestEventId, requestEventId);
                 Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
-                        "handleEdgeResponse - Cannot process the Edge personalization:decisions event, event handle type is not personalization:decisions.");
+                        "handleEdgeResponse - Ignoring Edge response event, either response handle is not personalization:decisions, or the response is not for a request the extension issued.");
                 return;
             }
 
@@ -316,6 +309,7 @@ class OptimizeExtension extends Extension {
             for (final Map<String, Object> propositionData : payload) {
                 final Proposition proposition = Proposition.fromEventData(propositionData);
                 if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getOffers())) {
+                    System.out.println("Proposition :" + proposition);
                     propositionsMap.put(proposition.getScope(), proposition);
                 }
             }

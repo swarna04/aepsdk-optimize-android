@@ -631,7 +631,7 @@ public class OptimizeFunctionalTests {
 
         //Call updatePropositions to update the personalizationRequestEventId
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
-        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
 
@@ -739,7 +739,7 @@ public class OptimizeFunctionalTests {
 
         //Call updatePropositions to update the personalizationRequestEventId
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
-        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
 
@@ -905,7 +905,7 @@ public class OptimizeFunctionalTests {
 
         //Call updatePropositions to update the personalizationRequestEventId
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
-        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
 
@@ -1014,7 +1014,7 @@ public class OptimizeFunctionalTests {
 
         //Call updatePropositions to update the personalizationRequestEventId
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
-        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
 
@@ -1148,7 +1148,7 @@ public class OptimizeFunctionalTests {
 
         //Call updatePropositions to update the personalizationRequestEventId
         Optimize.updatePropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"), null, null);
-        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
 
@@ -1355,7 +1355,7 @@ public class OptimizeFunctionalTests {
 
         //Call updatePropositions to update the personalizationRequestEventId
         Optimize.updatePropositionsForSurfacePaths(Collections.singletonList("myView#htmlElement"), null, null);
-        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
 
@@ -1653,7 +1653,7 @@ public class OptimizeFunctionalTests {
 
         //Call updatePropositions to update the personalizationRequestEventId
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
-        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
 
@@ -1765,7 +1765,7 @@ public class OptimizeFunctionalTests {
 
         //Call updatePropositions to update the personalizationRequestEventId
         Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
-        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.OPTIMIZE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        List<Event> eventsListOptimize = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
 
