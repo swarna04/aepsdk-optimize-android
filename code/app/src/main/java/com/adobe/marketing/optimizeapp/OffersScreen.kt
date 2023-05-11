@@ -71,7 +71,7 @@ fun OffersView(viewModel: MainViewModel) {
                     .fillMaxHeight(fraction = 0.85f)
                     .verticalScroll(state = rememberScrollState())
             ) {
-                if(viewModel.propositionType == "ODE") {
+                if(viewModel.scopeType == "Decision Scopes") {
                     OffersSectionText(sectionName = "Text Offers")
                     TextOffers()
                     OffersSectionText(sectionName = "Image Offers")
@@ -81,7 +81,7 @@ fun OffersView(viewModel: MainViewModel) {
                 HTMLOffers()
                 OffersSectionText(sectionName = "JSON Offers")
                 JSONOffers()
-                if(viewModel.propositionType == "ODE") {
+                if(viewModel.scopeType == "Decision Scopes") {
                     OffersSectionText(sectionName = "Target Offers")
                     TargetOffersView()
                 }
@@ -136,7 +136,7 @@ fun OffersView(viewModel: MainViewModel) {
                 .fillMaxWidth()
                 .fillMaxHeight()
             ) {
-                if (viewModel.propositionType == "ODE") {
+                if (viewModel.scopeType == "Decision Scopes") {
                     Row(Modifier.fillMaxWidth().align(Center)) {
                         Button(modifier = Modifier.weight(1.0f), onClick = {
                             viewModel.updateDecisionScopes()
@@ -238,7 +238,7 @@ fun OffersView(viewModel: MainViewModel) {
                             )
                         }
                     }
-                } else if (viewModel.propositionType == "Custom Content") {
+                } else if (viewModel.scopeType == "Surfaces") {
                     Row(Modifier.fillMaxWidth().align(Center)) {
                         Button(modifier = Modifier.weight(1.0f), onClick = {
                             viewModel.updateDecisionScopes()

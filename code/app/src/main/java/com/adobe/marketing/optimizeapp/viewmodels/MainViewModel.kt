@@ -25,7 +25,7 @@ class MainViewModel: ViewModel() {
     //Settings textField Values
     var textAssuranceUrl by mutableStateOf("")
 
-    var propositionType by mutableStateOf("Custom Content")
+    var scopeType by mutableStateOf("Surfaces")
 
     var textSurfaceHtml by mutableStateOf("")
     var textSurfaceJson by mutableStateOf("")

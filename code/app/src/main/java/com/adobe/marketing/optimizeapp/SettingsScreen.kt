@@ -39,7 +39,7 @@ import com.adobe.marketing.optimizeapp.viewmodels.MainViewModel
 @Composable
 fun SettingsView(viewModel: MainViewModel) {
     var expanded by remember { mutableStateOf(false) }
-    var propositionType = mutableListOf("Custom Content", "ODE")
+    val scopeType = mutableListOf("Surfaces", "Decision Scopes")
 
     Surface(
         modifier = Modifier
@@ -62,7 +62,7 @@ fun SettingsView(viewModel: MainViewModel) {
                 Text(text = "Start Assurance Session", textAlign = TextAlign.Start, style = MaterialTheme.typography.button)
             }
 
-            SettingsLabel(text = "Proposition Type", align = TextAlign.Start, textStyle = MaterialTheme.typography.subtitle1)
+            SettingsLabel(text = "Scope Type", align = TextAlign.Start, textStyle = MaterialTheme.typography.subtitle1)
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = {
@@ -74,10 +74,10 @@ fun SettingsView(viewModel: MainViewModel) {
                     readOnly = true,
                     placeholder = {
                         Text(
-                            text = "Select Type",
+                            text = "Select scope type",
                         )
                     },
-                    value =  viewModel.propositionType,
+                    value =  viewModel.scopeType,
                     onValueChange = { },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(
@@ -94,12 +94,12 @@ fun SettingsView(viewModel: MainViewModel) {
                         expanded = false
                     },
                 ) {
-                    propositionType.forEach { selectionOption ->
+                    scopeType.forEach { selectionOption ->
                         DropdownMenuItem(onClick = {
-                                if (selectionOption != viewModel.propositionType) {
+                                if (selectionOption != viewModel.scopeType) {
                                     viewModel.clearCachedPropositions()
                                 }
-                                viewModel.propositionType = selectionOption
+                                viewModel.scopeType = selectionOption
                                 expanded = false
                             }
                         ) {
@@ -110,7 +110,7 @@ fun SettingsView(viewModel: MainViewModel) {
                 }
             }
 
-            if (viewModel.propositionType == "Custom Content") {
+            if (viewModel.scopeType == "Surfaces") {
                 // Optimize Surface
                 SettingsLabel(
                     text = "Optimize-Surfaces",
@@ -125,7 +125,7 @@ fun SettingsView(viewModel: MainViewModel) {
                     value = viewModel.textSurfaceJson,
                     placeholder = "Enter Surface fragment (JSON)"
                 ) { viewModel.textSurfaceJson = it }
-            } else if (viewModel.propositionType == "ODE") {
+            } else if (viewModel.scopeType == "Decision Scopes") {
 
                 // Optimize OD
                 SettingsLabel(
