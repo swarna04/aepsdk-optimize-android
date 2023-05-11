@@ -259,7 +259,7 @@ fun OffersView(viewModel: MainViewModel) {
 
                             val data = mutableMapOf<String, Any>()
                             data["dataKey"] = "5678"
-                            viewModel.updatePropositionsForSuracePaths(
+                            viewModel.updatePropositionsForSurfacePaths(
                                 surfaceList = surfaceList,
                                 xdm = mapOf(Pair("xdmKey", "1234")),
                                 data = data

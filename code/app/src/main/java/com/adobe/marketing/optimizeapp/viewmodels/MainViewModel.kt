@@ -144,7 +144,7 @@ class MainViewModel: ViewModel() {
      * @param xdm a [Map] of xdm params
      * @param data a [Map] of data
      */
-    fun updatePropositionsForSuracePaths(surfaceList: List<String> , xdm: Map<String, String> , data: Map<String, Any>) {
+    fun updatePropositionsForSurfacePaths(surfaceList: List<String>, xdm: Map<String, String>, data: Map<String, Any>) {
         propositionStateMap.clear()
         Optimize.updatePropositionsForSurfacePaths(surfaceList, xdm, data)
     }
