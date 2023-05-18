@@ -167,6 +167,9 @@ class OptimizeConstants {
         static final String SCHEMA_OFFER_IMAGE = "https://ns.adobe.com/experience/offer-management/content-component-imagelink";
         static final String SCHEMA_OFFER_TEXT = "https://ns.adobe.com/experience/offer-management/content-component-text";
 
+        // AJO schemas
+        static final String SCHEMA_AJO_DECISION = "https://ns.adobe.com/personalization/decision";
+
         private JsonValues() {}
     }
 }
