@@ -275,7 +275,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(queryPersonalization);
             final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
             Assert.assertNotNull(schemas);
-            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(8, schemas.size());
             Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
             final List<String> scopes = (List<String>) queryPersonalization.get("decisionScopes");
             Assert.assertNotNull(scopes);
@@ -349,7 +349,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(queryPersonalization);
             final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
             Assert.assertNotNull(schemas);
-            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(8, schemas.size());
             Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
             final List<String> scopes = (List<String>) queryPersonalization.get("decisionScopes");
             Assert.assertNotNull(scopes);
@@ -425,7 +425,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(queryPersonalization);
             final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
             Assert.assertNotNull(schemas);
-            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(8, schemas.size());
             Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
             final List<String> scopes = (List<String>) queryPersonalization.get("decisionScopes");
             Assert.assertNotNull(scopes);
@@ -494,7 +494,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(queryPersonalization);
             final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
             Assert.assertNotNull(schemas);
-            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(8, schemas.size());
             Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
             final List<String> scopes = (List<String>) queryPersonalization.get("decisionScopes");
             Assert.assertNotNull(scopes);
@@ -656,7 +656,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(queryPersonalization);
             final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
             Assert.assertNotNull(schemas);
-            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(8, schemas.size());
             Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
             final List<String> scopes = (List<String>) queryPersonalization.get("decisionScopes");
             Assert.assertNotNull(scopes);
@@ -723,7 +723,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(queryPersonalization);
             final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
             Assert.assertNotNull(schemas);
-            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(8, schemas.size());
             Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
             final List<String> surfaces = (List<String>) queryPersonalization.get("surfaces");
             Assert.assertNotNull(surfaces);
@@ -801,7 +801,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(queryPersonalization);
             final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
             Assert.assertNotNull(schemas);
-            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(8, schemas.size());
             Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
             final List<String> surfaces = (List<String>) queryPersonalization.get("surfaces");
             Assert.assertNotNull(surfaces);
@@ -873,7 +873,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(queryPersonalization);
             final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
             Assert.assertNotNull(schemas);
-            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(8, schemas.size());
             Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
             final List<String> surfaces = (List<String>) queryPersonalization.get("surfaces");
             Assert.assertNotNull(surfaces);
@@ -1042,7 +1042,7 @@ public class OptimizeExtensionTests {
             Assert.assertNotNull(queryPersonalization);
             final List<String> schemas = (List<String>) queryPersonalization.get("schemas");
             Assert.assertNotNull(schemas);
-            Assert.assertEquals(7, schemas.size());
+            Assert.assertEquals(8, schemas.size());
             Assert.assertEquals(OptimizeExtension.supportedSchemas, schemas);
             final List<String> surfaces = (List<String>) queryPersonalization.get("surfaces");
             Assert.assertNotNull(surfaces);
