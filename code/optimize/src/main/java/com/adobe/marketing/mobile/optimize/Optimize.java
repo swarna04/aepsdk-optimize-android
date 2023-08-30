@@ -282,7 +282,7 @@ public class Optimize {
     }
 
     @VisibleForTesting
-    static void setIsPropositionsResponseListenerRegistered(final boolean status) {
+    static void setPropositionsResponseListenerRegistrationStatus(final boolean status) {
         isPropositionsResponseListenerRegistered = status;
     }
 }
