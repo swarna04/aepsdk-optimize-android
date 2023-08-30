@@ -29,6 +29,7 @@ import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 /**
  * Public class containing APIs for the Optimize extension.
@@ -278,5 +279,10 @@ public class Optimize {
         if (callbackWithError != null) {
             callbackWithError.fail(error);
         }
+    }
+
+    @VisibleForTesting
+    static void setIsPropositionsResponseListenerRegistered(final boolean status) {
+        isPropositionsResponseListenerRegistered = status;
     }
 }

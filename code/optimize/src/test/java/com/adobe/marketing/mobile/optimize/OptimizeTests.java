@@ -478,6 +478,7 @@ public class OptimizeTests {
 
     @Test
     public void testOnPropositionsUpdate_validProposition() throws Exception {
+        Optimize.setIsPropositionsResponseListenerRegistered(false);
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
             Optimize.onPropositionsUpdate(new AdobeCallbackWithError<Map<DecisionScope, Proposition>>() {
@@ -521,6 +522,7 @@ public class OptimizeTests {
 
     @Test
     public void testOnPropositionsUpdate_emptyPropositionData() {
+        Optimize.setIsPropositionsResponseListenerRegistered(false);
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
             Optimize.onPropositionsUpdate(new AdobeCallbackWithError<Map<DecisionScope, Proposition>>() {
@@ -557,6 +559,7 @@ public class OptimizeTests {
 
     @Test
     public void testOnPropositionsUpdate_nullPropositionData() {
+        Optimize.setIsPropositionsResponseListenerRegistered(false);
         try (MockedStatic<MobileCore> mobileCoreMockedStatic = Mockito.mockStatic(MobileCore.class)) {
             // test
             Optimize.onPropositionsUpdate(new AdobeCallbackWithError<Map<DecisionScope, Proposition>>() {
