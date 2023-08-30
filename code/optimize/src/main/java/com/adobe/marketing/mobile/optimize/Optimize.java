@@ -37,7 +37,6 @@ import androidx.annotation.VisibleForTesting;
 public class Optimize {
     public final static Class<? extends Extension> EXTENSION = OptimizeExtension.class;
     private static final String SELF_TAG = "Optimize";
-    private static boolean isPropositionsResponseListenerRegistered = false;
 
     private Optimize() {}
 
@@ -215,44 +214,38 @@ public class Optimize {
      * @param callback {@code AdobeCallbackWithError<Map<DecisionScope, Proposition>>} which will be invoked when decision propositions are received from the Edge network.
      */
     public static void onPropositionsUpdate(@NonNull final AdobeCallback<Map<DecisionScope, Proposition>> callback) {
-        // Only register the listener once
-        if (!isPropositionsResponseListenerRegistered) {
-            MobileCore.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.NOTIFICATION, new AdobeCallbackWithError<Event>() {
-                @Override
-                public void fail(final AdobeError error) {
+        MobileCore.registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.NOTIFICATION, new AdobeCallbackWithError<Event>() {
+            @Override
+            public void fail(final AdobeError error) {}
+
+            @Override
+            public void call(final Event event) {
+                final Map<String, Object> eventData = event.getEventData();
+                if (OptimizeUtils.isNullOrEmpty(eventData)) {
+                    return;
                 }
 
-                @Override
-                public void call(final Event event) {
-                    final Map<String, Object> eventData = event.getEventData();
-                    if (OptimizeUtils.isNullOrEmpty(eventData)) {
-                        return;
-                    }
+                final List<Map<String, Object>> propositionsList;
+                try {
+                    propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
 
-                    final List<Map<String, Object>> propositionsList;
-                    try {
-                        propositionsList = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.PROPOSITIONS);
-
-                        final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
-                        if (propositionsList != null) {
-                            for (final Map<String, Object> propositionData : propositionsList) {
-                                final Proposition proposition = Proposition.fromEventData(propositionData);
-                                if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
-                                    final DecisionScope scope = new DecisionScope(proposition.getScope());
-                                    propositionsMap.put(scope, proposition);
-                                }
+                    final Map<DecisionScope, Proposition> propositionsMap = new HashMap<>();
+                    if(propositionsList != null) {
+                        for (final Map<String, Object> propositionData : propositionsList) {
+                            final Proposition proposition = Proposition.fromEventData(propositionData);
+                            if (proposition != null && !OptimizeUtils.isNullOrEmpty(proposition.getScope())) {
+                                final DecisionScope scope = new DecisionScope(proposition.getScope());
+                                propositionsMap.put(scope, proposition);
                             }
                         }
-
-                        if (!propositionsMap.isEmpty()) {
-                            callback.call(propositionsMap);
-                        }
-                    } catch (DataReaderException ignored) {
                     }
-                }
-            });
-            isPropositionsResponseListenerRegistered = true;
-        }
+
+                    if (!propositionsMap.isEmpty()) {
+                        callback.call(propositionsMap);
+                    }
+                } catch (DataReaderException ignored) {}
+            }
+        });
     }
 
     /**
