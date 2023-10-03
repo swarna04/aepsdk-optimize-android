@@ -15,7 +15,9 @@ package com.adobe.marketing.mobile.optimize;
 import android.util.Base64;
 
 import com.adobe.marketing.mobile.AdobeError;
+import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.services.Log;
+import com.adobe.marketing.mobile.util.DataReader;
 
 import java.util.Collection;
 import java.util.Map;
@@ -116,5 +118,44 @@ class OptimizeUtils {
                 error = AdobeError.UNEXPECTED_ERROR;
         }
         return error;
+    }
+
+    /**
+     * Checks whether the given event is a personalization: decisions response returned from the Edge network.
+     *
+     * @param event instance of {@link Event}
+     * @return {@code boolean} containing true if event is a personalization: decisions event, false otherwise.
+     */
+    static boolean isPersonalizationDecisionsResponse(final Event event) {
+        return OptimizeConstants.EventType.EDGE.equalsIgnoreCase(event.getType()) &&
+                OptimizeConstants.EventSource.EDGE_PERSONALIZATION_DECISIONS.equalsIgnoreCase(event.getSource());
+    }
+
+    /**
+     * Checks whether the given event is an Optimize request content event for retrieving cached propositions.
+     * <p>
+     * The get request should have {@code requesttype} set to {@literal getpropositions} in the event's data.
+     *
+     * @param event instance of {@link Event}
+     * @return true if event is a Personalization Decision Response event, false otherwise
+     */
+    static boolean isGetEvent(final Event event) {
+        final String requestType = DataReader.optString(event.getEventData(), OptimizeConstants.EventDataKeys.REQUEST_TYPE, "");
+        return OptimizeConstants.EventType.OPTIMIZE.equalsIgnoreCase(event.getType()) &&
+                OptimizeConstants.EventSource.REQUEST_CONTENT.equalsIgnoreCase(event.getSource()) &&
+                requestType.equalsIgnoreCase(OptimizeConstants.EventDataValues.REQUEST_TYPE_GET);
+    }
+
+    /**
+     * Returns event's parentID or {@code requestEventId} present in the event's data.
+     * @param event instance of {@link Event}
+     * @return {@link String} containing request event ID.
+     */
+    static String getRequestEventId(final Event event) {
+        String requestEventId = event.getParentID();
+        if (OptimizeUtils.isNullOrEmpty(requestEventId)) {
+            requestEventId = DataReader.optString(event.getEventData(), OptimizeConstants.EventDataKeys.REQUEST_EVENT_ID, null);
+        }
+        return requestEventId;
     }
 }

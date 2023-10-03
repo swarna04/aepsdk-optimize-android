@@ -12,15 +12,19 @@
 
 package com.adobe.marketing.mobile.optimize;
 
+import com.adobe.marketing.mobile.AdobeCallbackWithError;
 import com.adobe.marketing.mobile.AdobeError;
 import com.adobe.marketing.mobile.Event;
 import com.adobe.marketing.mobile.Extension;
 import com.adobe.marketing.mobile.ExtensionApi;
+import com.adobe.marketing.mobile.MobileCore;
 import com.adobe.marketing.mobile.SharedStateResolution;
 import com.adobe.marketing.mobile.SharedStateResult;
 import com.adobe.marketing.mobile.SharedStateStatus;
 import com.adobe.marketing.mobile.services.Log;
 import com.adobe.marketing.mobile.util.DataReader;
+import com.adobe.marketing.mobile.util.DataReaderException;
+import com.adobe.marketing.mobile.util.SerialWorkDispatcher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +39,29 @@ class OptimizeExtension extends Extension {
 
     private static final String SELF_TAG = "OptimizeExtension";
     private Map<DecisionScope, Proposition> cachedPropositions;
+
+    // Events dispatcher used to maintain the processing order of update and get propositions events.
+    // It ensures any update propositions requests issued before a get propositions call are completed
+    // and the get propositions request is fulfilled from the latest cached content.
+    private final SerialWorkDispatcher eventsDispatcher =
+            new SerialWorkDispatcher("OptimizeEventsDispatcher",
+                    new SerialWorkDispatcher.WorkHandler<Event>() {
+                        @Override
+                        public boolean doWork(Event event) {
+                            if (OptimizeUtils.isGetEvent(event)) {
+                                handleGetPropositions(event);
+                            } else if (event.getType().equalsIgnoreCase(OptimizeConstants.EventType.EDGE)) {
+                                return !updateRequestEventIdsInProgress.containsKey(event.getUniqueIdentifier());
+                            }
+                            return true;
+                        }
+                    });
+
+    // Map containing the update event IDs (and corresponding requested scopes) for Edge events that haven't yet received an Edge completion response.
+    private Map<String, List<DecisionScope>> updateRequestEventIdsInProgress = new HashMap<>();
+
+    // a dictionary to accumulate propositions returned in various personalization:decisions events for the same Edge personalization request.
+    private final Map<DecisionScope, Proposition> propositionsInProgress = new HashMap<>();
 
     // List containing the schema strings for the proposition items supported by the SDK, sent in the personalization query request.
     final static List<String> supportedSchemas = Arrays.asList(
@@ -86,6 +113,9 @@ class OptimizeExtension extends Extension {
         // Register listener - Mobile Core `resetIdentities()` API dispatches generic identity request reset event.
         getApi().registerEventListener(OptimizeConstants.EventType.GENERIC_IDENTITY, OptimizeConstants.EventSource.REQUEST_RESET, this::handleClearPropositions);
 
+        getApi().registerEventListener(OptimizeConstants.EventType.OPTIMIZE, OptimizeConstants.EventSource.CONTENT_COMPLETE, this::handleUpdatePropositionsCompleted);
+
+        eventsDispatcher.start();
     }
 
     @Override
@@ -153,7 +183,9 @@ class OptimizeExtension extends Extension {
                 handleUpdatePropositions(event);
                 break;
             case OptimizeConstants.EventDataValues.REQUEST_TYPE_GET:
-                handleGetPropositions(event);
+                // Queue the get propositions event in the events dispatcher to ensure any prior update requests are completed
+                // before it is processed.
+                eventsDispatcher.offer(event);
                 break;
             case OptimizeConstants.EventDataValues.REQUEST_TYPE_TRACK:
                 handleTrackPropositions(event);
@@ -186,8 +218,8 @@ class OptimizeExtension extends Extension {
 
         try {
             final List<Map<String, Object>> decisionScopesData = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.DECISION_SCOPES);
-            final List<String> validScopeNames = retrieveValidDecisionScopes(decisionScopesData);
-            if (OptimizeUtils.isNullOrEmpty(validScopeNames)) {
+            final List<DecisionScope> validScopes = retrieveValidDecisionScopes(decisionScopesData);
+            if (OptimizeUtils.isNullOrEmpty(validScopes)) {
                 Log.debug(OptimizeConstants.LOG_TAG,
                         SELF_TAG,
                         "handleUpdatePropositions - Cannot process the update propositions request event, provided list of decision scopes has no valid scope.");
@@ -199,7 +231,13 @@ class OptimizeExtension extends Extension {
             // Add query
             final Map<String, Object> queryPersonalization = new HashMap<>();
             queryPersonalization.put(OptimizeConstants.JsonKeys.SCHEMAS, supportedSchemas);
+
+            final List<String> validScopeNames = new ArrayList<>();
+            for (final DecisionScope scope: validScopes) {
+                validScopeNames.add(scope.getName());
+            }
             queryPersonalization.put(OptimizeConstants.JsonKeys.DECISION_SCOPES, validScopeNames);
+
             final Map<String, Object> query = new HashMap<>();
             query.put(OptimizeConstants.JsonKeys.QUERY_PERSONALIZATION, queryPersonalization);
             edgeEventData.put(OptimizeConstants.JsonKeys.QUERY, query);
@@ -225,6 +263,11 @@ class OptimizeExtension extends Extension {
                 }
             }
 
+            // Add the flag to request sendCompletion
+            final Map<String, Object> request = new HashMap<>();
+            request.put(OptimizeConstants.JsonKeys.REQUEST_SEND_COMPLETION, true);
+            edgeEventData.put(OptimizeConstants.JsonKeys.REQUEST, request);
+
             // Add override datasetId
             if (configData.containsKey(OptimizeConstants.Configuration.OPTIMIZE_OVERRIDE_DATASET_ID)) {
                 final String overrideDatasetId = DataReader.getString(configData, OptimizeConstants.Configuration.OPTIMIZE_OVERRIDE_DATASET_ID);
@@ -237,12 +280,99 @@ class OptimizeExtension extends Extension {
                     OptimizeConstants.EventType.EDGE,
                     OptimizeConstants.EventSource.REQUEST_CONTENT)
                     .setEventData(edgeEventData)
+                    .chainToParentEvent(event)
                     .build();
 
-            getApi().dispatch(edgeEvent);
+            // In AEP Response Event handle, `requestEventId` corresponds to the unique identifier for the Edge request.
+            // Storing the request event unique identifier to compare and process only the anticipated response in the extension.
+            updateRequestEventIdsInProgress.put(edgeEvent.getUniqueIdentifier(), validScopes);
+
+            // add the Edge event to update propositions in the events queue.
+            eventsDispatcher.offer(edgeEvent);
+
+            MobileCore.dispatchEventWithResponseCallback(edgeEvent, 5000L, new AdobeCallbackWithError<Event>() {
+                @Override
+                public void fail(final AdobeError error) {
+                    // response event failed or timed out, remove this event's unique identifier from the requested event IDs dictionary and kick-off queue.
+                    updateRequestEventIdsInProgress.remove(edgeEvent.getUniqueIdentifier());
+                    eventsDispatcher.resume();
+                }
+
+                @Override
+                public void call(final Event event) {
+                    final String requestEventId = OptimizeUtils.getRequestEventId(event);
+                    if (OptimizeUtils.isNullOrEmpty(requestEventId)) {
+                        fail(AdobeError.UNEXPECTED_ERROR);
+                        return;
+                    }
+
+                    final Event updateCompleteEvent = new Event.Builder(OptimizeConstants.EventNames.OPTIMIZE_UPDATE_COMPLETE,
+                            OptimizeConstants.EventType.OPTIMIZE,
+                            OptimizeConstants.EventSource.CONTENT_COMPLETE)
+                            .setEventData(new HashMap<String, Object>(){
+                                {
+                                    put(OptimizeConstants.EventDataKeys.COMPLETED_UPDATE_EVENT_ID, requestEventId);
+                                }
+                            })
+                            .chainToParentEvent(event)
+                            .build();
+
+                    getApi().dispatch(updateCompleteEvent);
+                }
+            });
         } catch (final Exception e) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleUpdatePropositions - Failed to process update propositions request event due to an exception (%s)!", e.getLocalizedMessage());
+        }
+    }
+
+    /**
+     * Handles the event with type {@value OptimizeConstants.EventType#OPTIMIZE} and source {@value OptimizeConstants.EventSource#CONTENT_COMPLETE}.
+     * <p>
+     * The event is dispatched internally upon receiving an Edge content complete response for an update propositions request.
+     *
+     * @param event incoming {@link Event} object to be processed.
+     */
+    void handleUpdatePropositionsCompleted(@NonNull final Event event) {
+        String requestCompletedForEventId = "";
+        try {
+            final Map<String, Object> eventData = event.getEventData();
+            requestCompletedForEventId = DataReader.getString(event.getEventData(), OptimizeConstants.EventDataKeys.COMPLETED_UPDATE_EVENT_ID);
+            final List<DecisionScope> requestedScopes = updateRequestEventIdsInProgress.get(requestCompletedForEventId);
+
+            // Update propositions in cache
+            updateCachedPropositions(requestedScopes);
+        }  catch (final DataReaderException e) {
+            Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG,
+                    "handleUpdatePropositionsCompleted - Cannot process the update propositions complete event due to an exception (%s)!", e.getLocalizedMessage());
+        } finally {
+            // remove completed event's ID from the request event IDs dictionary.
+            updateRequestEventIdsInProgress.remove(requestCompletedForEventId);
+            propositionsInProgress.clear();
+
+            // Resume events dispatcher processing after update propositions request is completed.
+            eventsDispatcher.resume();
+        }
+    }
+
+    /**
+     * Updates the in-memory propositions cache with the returned propositions.
+     * <p>
+     * Any requested scopes for which no propositions are returned in personalization: decisions events are removed from the cache.
+     *
+     * @param requestedScopes a {@code List<DecisionScope>} for which propositions are requested.
+     */
+    private void updateCachedPropositions(List<DecisionScope> requestedScopes) {
+        // update cache with accumulated propositions
+        cachedPropositions.putAll(propositionsInProgress);
+
+        // remove cached propositions for requested scopes for which no propositions are returned.
+        final List<DecisionScope> returnedScopes = new ArrayList<>(propositionsInProgress.keySet());
+        final List<DecisionScope> scopesToRemove = new ArrayList<>(requestedScopes);
+        scopesToRemove.removeAll(returnedScopes);
+
+        for (final DecisionScope scope: scopesToRemove) {
+            cachedPropositions.remove(scope);
         }
     }
 
@@ -263,12 +393,13 @@ class OptimizeExtension extends Extension {
 
         try {
             final Map<String, Object> eventData = event.getEventData();
+            final String requestEventId = OptimizeUtils.getRequestEventId(event);
 
-            // Verify the Edge response event handle
-            final String edgeEventHandleType = DataReader.getString(eventData, OptimizeConstants.Edge.EVENT_HANDLE);
-            if (!OptimizeConstants.Edge.EVENT_HANDLE_TYPE_PERSONALIZATION.equals(edgeEventHandleType)) {
+            if (!OptimizeUtils.isPersonalizationDecisionsResponse(event) ||
+                    OptimizeUtils.isNullOrEmpty(requestEventId) ||
+                    !updateRequestEventIdsInProgress.containsKey(requestEventId)) {
                 Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
-                        "handleEdgeResponse - Cannot process the Edge personalization:decisions event, event handle type is not personalization:decisions.");
+                        "handleEdgeResponse - Ignoring Edge event, either handle type is not personalization:decisions, or the response isn't intended for this extension.");
                 return;
             }
 
@@ -292,8 +423,8 @@ class OptimizeExtension extends Extension {
                 return;
             }
 
-            // Update propositions cache
-            cachedPropositions.putAll(propositionsMap);
+            // accumulate propositions in in-progress propositions dictionary
+            propositionsInProgress.putAll(propositionsMap);
 
             final List<Map<String, Object>> propositionsList = new ArrayList<>();
             for (final Proposition proposition : propositionsMap.values()) {
@@ -351,8 +482,8 @@ class OptimizeExtension extends Extension {
         
         try {
             final List<Map<String, Object>> decisionScopesData = DataReader.getTypedListOfMap(Object.class, eventData, OptimizeConstants.EventDataKeys.DECISION_SCOPES);
-            final List<String> validScopeNames = retrieveValidDecisionScopes(decisionScopesData);
-            if (OptimizeUtils.isNullOrEmpty(validScopeNames)) {
+            final List<DecisionScope> validScopes = retrieveValidDecisionScopes(decisionScopesData);
+            if (OptimizeUtils.isNullOrEmpty(validScopes)) {
                 Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG,
                         "handleGetPropositions - Cannot process the get propositions request event, provided list of decision scopes has no valid scope.");
                 getApi().dispatch(createResponseEventWithError(event, AdobeError.UNEXPECTED_ERROR));
@@ -360,8 +491,7 @@ class OptimizeExtension extends Extension {
             }
 
             final List<Map<String, Object>> propositionsList = new ArrayList<>();
-            for (final String scopeName : validScopeNames) {
-                final DecisionScope scope = new DecisionScope(scopeName);
+            for (final DecisionScope scope : validScopes) {
                 if (cachedPropositions.containsKey(scope)) {
                     final Proposition proposition = cachedPropositions.get(scope);
                     propositionsList.add(proposition.toEventData());
@@ -465,36 +595,36 @@ class OptimizeExtension extends Extension {
     }
 
     /**
-     * Retrieves the {@code List<String>} containing valid scope names.
+     * Retrieves the {@code List<DecisionScope>} containing valid scopes.
      * <p>
      * This method returns null if the given {@code decisionScopesData} list is null, or empty, or if there is no valid decision scope in the
      * provided list.
      *
      * @param decisionScopesData input {@code List<Map<String, Object>>} containing scope data.
-     * @return {@code List<String>} containing valid scope names.
+     * @return {@code List<DecisionScope>} containing valid scopes.
      * @see DecisionScope#isValid()
      */
-    private List<String> retrieveValidDecisionScopes(final List<Map<String, Object>> decisionScopesData) {
+    private List<DecisionScope> retrieveValidDecisionScopes(final List<Map<String, Object>> decisionScopesData) {
         if (OptimizeUtils.isNullOrEmpty(decisionScopesData)) {
             Log.debug(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidDecisionScopes - No valid decision scopes are retrieved, provided decision scopes list is null or empty.");
             return null;
         }
 
-        final List<String> validScopeNames = new ArrayList<>();
+        final List<DecisionScope> validScopes = new ArrayList<>();
         for (final Map<String, Object> scopeData: decisionScopesData) {
             final DecisionScope scope = DecisionScope.fromEventData(scopeData);
             if (scope == null || !scope.isValid()) {
                 continue;
             }
-            validScopeNames.add(scope.getName());
+            validScopes.add(scope);
         }
 
-        if (validScopeNames.size() == 0) {
+        if (validScopes.size() == 0) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG, "retrieveValidDecisionScopes - No valid decision scopes are retrieved, provided list of decision scopes has no valid scope.");
             return null;
         }
 
-        return validScopeNames;
+        return validScopes;
     }
 
     /**
@@ -523,5 +653,15 @@ class OptimizeExtension extends Extension {
     @VisibleForTesting
     void setCachedPropositions(final Map<DecisionScope, Proposition> cachedPropositions) {
         this.cachedPropositions = cachedPropositions;
+    }
+
+    @VisibleForTesting
+    Map<String, List<DecisionScope>> getUpdateRequestEventIdsInProgress() {
+        return updateRequestEventIdsInProgress;
+    }
+
+    @VisibleForTesting
+    void setUpdateRequestEventIdsInProgress(final String eventId, final List<DecisionScope> expectedScopes) {
+        updateRequestEventIdsInProgress.put(eventId, expectedScopes);
     }
 }

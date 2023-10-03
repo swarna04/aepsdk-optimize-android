@@ -14,7 +14,7 @@ package com.adobe.marketing.mobile.optimize;
 
 public class OptimizeTestConstants {
 
-    static final String EXTENSION_VERSION = "2.0.1";
+    static final String EXTENSION_VERSION = "2.0.2";
     public static final String LOG_TAG = "OptimizeTest";
     static final String CONFIG_DATA_STORE = "AdobeMobile_ConfigState";
 
@@ -37,6 +37,7 @@ public class OptimizeTestConstants {
         public static final String EDGE_ERROR_RESPONSE = "com.adobe.eventSource.errorResponseContent";
         public static final String RESPONSE_CONTENT = "com.adobe.eventSource.responseContent";
         public static final String REQUEST_RESET = "com.adobe.eventSource.requestReset";
+        public static final String CONTENT_COMPLETE = "com.adobe.eventSource.contentComplete";
     }
 
     public final static class EventDataKeys {
