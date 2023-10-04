@@ -165,7 +165,7 @@ public class Optimize {
                 .build();
 
         // Increased default response callback timeout to 10s to ensure prior update propositions requests have enough time to complete.
-        MobileCore.dispatchEventWithResponseCallback(event, OptimizeConstants.DEFAULT_RESPONSE_CALLBACK_TIMEOUT,  new AdobeCallbackWithError<Event>() {
+        MobileCore.dispatchEventWithResponseCallback(event, OptimizeConstants.GET_RESPONSE_CALLBACK_TIMEOUT,  new AdobeCallbackWithError<Event>() {
             @Override
             public void fail(final AdobeError adobeError) {
                 failWithError(callback, adobeError);

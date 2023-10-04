@@ -47,7 +47,7 @@ class OptimizeExtension extends Extension {
             new SerialWorkDispatcher("OptimizeEventsDispatcher",
                     new SerialWorkDispatcher.WorkHandler<Event>() {
                         @Override
-                        public boolean doWork(Event event) {
+                        public boolean doWork(final Event event) {
                             if (OptimizeUtils.isGetEvent(event)) {
                                 handleGetPropositions(event);
                             } else if (event.getType().equalsIgnoreCase(OptimizeConstants.EventType.EDGE)) {
@@ -290,7 +290,7 @@ class OptimizeExtension extends Extension {
             // add the Edge event to update propositions in the events queue.
             eventsDispatcher.offer(edgeEvent);
 
-            MobileCore.dispatchEventWithResponseCallback(edgeEvent, 5000L, new AdobeCallbackWithError<Event>() {
+            MobileCore.dispatchEventWithResponseCallback(edgeEvent, OptimizeConstants.EDGE_CONTENT_COMPLETE_RESPONSE_TIMEOUT, new AdobeCallbackWithError<Event>() {
                 @Override
                 public void fail(final AdobeError error) {
                     // response event failed or timed out, remove this event's unique identifier from the requested event IDs dictionary and kick-off queue.
@@ -362,7 +362,7 @@ class OptimizeExtension extends Extension {
      *
      * @param requestedScopes a {@code List<DecisionScope>} for which propositions are requested.
      */
-    private void updateCachedPropositions(List<DecisionScope> requestedScopes) {
+    private void updateCachedPropositions(final List<DecisionScope> requestedScopes) {
         // update cache with accumulated propositions
         cachedPropositions.putAll(propositionsInProgress);
 
