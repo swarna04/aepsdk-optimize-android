@@ -342,12 +342,13 @@ class OptimizeExtension extends Extension {
 
             // Update propositions in cache
             updateCachedPropositions(requestedScopes);
+
+            // remove completed event's ID from the request event IDs dictionary.
+            updateRequestEventIdsInProgress.remove(requestCompletedForEventId);
         }  catch (final DataReaderException e) {
             Log.warning(OptimizeConstants.LOG_TAG, SELF_TAG,
                     "handleUpdatePropositionsCompleted - Cannot process the update propositions complete event due to an exception (%s)!", e.getLocalizedMessage());
         } finally {
-            // remove completed event's ID from the request event IDs dictionary.
-            updateRequestEventIdsInProgress.remove(requestCompletedForEventId);
             propositionsInProgress.clear();
 
             // Resume events dispatcher processing after update propositions request is completed.
