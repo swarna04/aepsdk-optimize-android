@@ -24,7 +24,6 @@ Additional documentation about API usage and SDK architecture can be found under
 
 | Project                                                      | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| [AEP SDK Sample App for Android](https://github.com/adobe/aepsdk-sample-app-android) | Contains Android sample app for the AEP SDK. |
 | [Core extensions](https://github.com/adobe/aepsdk-core-android)                                    | The Mobile Core represents the foundation of the Experience Platform Mobile SDK. |
 | [Adobe Experience Platform Edge Network Mobile Extension](https://github.com/adobe/aepsdk-edge-android) | The Adobe Experience Platform Edge Network mobile extension allows you to send data to the Experience Platform Edge Network from a mobile application. |
 | [Identity for Edge Network extension](https://github.com/adobe/aepsdk-edgeidentity-android)        | The Identity for Edge Network extension enables handling of user identity data from a mobile app when using the Experience Platform Mobile SDK and the Edge Network extension. |
