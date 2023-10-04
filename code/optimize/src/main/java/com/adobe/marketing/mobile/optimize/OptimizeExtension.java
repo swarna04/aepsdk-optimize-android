@@ -290,6 +290,9 @@ class OptimizeExtension extends Extension {
             // add the Edge event to update propositions in the events queue.
             eventsDispatcher.offer(edgeEvent);
 
+            // clear propositions in progress dictionary for a clean initial state
+            propositionsInProgress.clear();
+            
             MobileCore.dispatchEventWithResponseCallback(edgeEvent, OptimizeConstants.EDGE_CONTENT_COMPLETE_RESPONSE_TIMEOUT, new AdobeCallbackWithError<Event>() {
                 @Override
                 public void fail(final AdobeError error) {
