@@ -397,12 +397,19 @@ public class OptimizeFunctionalTests {
     @Test
     public void testGetPropositions_decisionScopeInCache() throws InterruptedException, IOException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
-        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
+        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event edgeEvent = eventsListEdge.get(0);
+        final String requestEventId = edgeEvent.getUniqueIdentifier();
+        Assert.assertFalse(requestEventId.isEmpty());
+
+        // Send Edge Response event
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -434,7 +441,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\":\"" + requestEventId + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -451,6 +458,21 @@ public class OptimizeFunctionalTests {
 
         //Action
         MobileCore.dispatchEvent(event);
+
+        Thread.sleep(1000);
+
+        // Send completion event
+        Map<String, Object> completionEventData = new HashMap<String, Object>() {
+            {
+                put("completedUpdateRequestForEventId", requestEventId);
+            }
+        };
+        Event completionEvent = new Event.Builder(
+                "Optimize Update Propositions Complete",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.CONTENT_COMPLETE).
+                setEventData(completionEventData).build();
+        MobileCore.dispatchEvent(completionEvent);
 
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
@@ -499,12 +521,19 @@ public class OptimizeFunctionalTests {
     @Test
     public void testGetPropositions_decisionScopeInCacheFromTargetResponseWithClickTracking() throws ClassCastException, InterruptedException,IOException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
-        final String decisionScopeString = "myMbox1";
 
+        final String decisionScopeString = "myMbox1";
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event edgeEvent = eventsListEdge.get(0);
+        final String requestEventId = edgeEvent.getUniqueIdentifier();
+        Assert.assertFalse(requestEventId.isEmpty());
+
+        // Send Edge response event
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -560,7 +589,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\":\"" + requestEventId + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -577,6 +606,21 @@ public class OptimizeFunctionalTests {
 
         //Action
         MobileCore.dispatchEvent(event);
+
+        Thread.sleep(1000);
+
+        // Send completion event
+        Map<String, Object> completionEventData = new HashMap<String, Object>() {
+            {
+                put("completedUpdateRequestForEventId", requestEventId);
+            }
+        };
+        Event completionEvent = new Event.Builder(
+                "Optimize Update Propositions Complete",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.CONTENT_COMPLETE).
+                setEventData(completionEventData).build();
+        MobileCore.dispatchEvent(completionEvent);
 
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
@@ -659,12 +703,19 @@ public class OptimizeFunctionalTests {
     @Test
     public void testGetPropositions_notAllDecisionScopesInCache() throws IOException, InterruptedException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
-        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
+        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event edgeEvent = eventsListEdge.get(0);
+        final String requestEventId = edgeEvent.getUniqueIdentifier();
+        Assert.assertFalse(requestEventId.isEmpty());
+
+        // Send Edge response event
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -695,7 +746,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\": \"" + requestEventId + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -711,6 +762,21 @@ public class OptimizeFunctionalTests {
 
         //Action
         MobileCore.dispatchEvent(event);
+
+        Thread.sleep(1000);
+
+        // Send completion event
+        Map<String, Object> completionEventData = new HashMap<String, Object>() {
+            {
+                put("completedUpdateRequestForEventId", requestEventId);
+            }
+        };
+        Event completionEvent = new Event.Builder(
+                "Optimize Update Propositions Complete",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.CONTENT_COMPLETE).
+                setEventData(completionEventData).build();
+        MobileCore.dispatchEvent(completionEvent);
 
         Thread.sleep(1000);
         TestHelper.resetTestExpectations();
@@ -1078,12 +1144,19 @@ public class OptimizeFunctionalTests {
     @Test
     public void testClearCachedPropositions() throws InterruptedException, IOException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
-        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
+        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event edgeEvent = eventsListEdge.get(0);
+        final String requestEventId = edgeEvent.getUniqueIdentifier();
+        Assert.assertFalse(requestEventId.isEmpty());
+
+        // Send Edge response event
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -1114,7 +1187,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\":\"" + requestEventId + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -1134,6 +1207,20 @@ public class OptimizeFunctionalTests {
 
         Thread.sleep(1000);
 
+        // Send completion event
+        Map<String, Object> completionEventData = new HashMap<String, Object>() {
+            {
+                put("completedUpdateRequestForEventId", requestEventId);
+            }
+        };
+        Event completionEvent = new Event.Builder(
+                "Optimize Update Propositions Complete",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.CONTENT_COMPLETE).
+                setEventData(completionEventData).build();
+        MobileCore.dispatchEvent(completionEvent);
+
+        Thread.sleep(1000);
         TestHelper.resetTestExpectations();
         DecisionScope decisionScope = new DecisionScope(decisionScopeString);
         final Map<DecisionScope, Proposition> propositionMap = new HashMap<>();
@@ -1183,12 +1270,19 @@ public class OptimizeFunctionalTests {
     @Test
     public void testCoreResetIdentities() throws InterruptedException, IOException {
         //setup
-        //Send Edge Response event so that propositions will get cached by the Optimize SDK
         final Map<String, Object> configData = new HashMap<>();
         configData.put("edge.configId", "ffffffff-ffff-ffff-ffff-ffffffffffff");
         updateConfiguration(configData);
-        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
 
+        final String decisionScopeString = "eyJhY3Rpdml0eUlkIjoieGNvcmU6b2ZmZXItYWN0aXZpdHk6MTExMTExMTExMTExMTExMSIsInBsYWNlbWVudElkIjoieGNvcmU6b2ZmZXItcGxhY2VtZW50OjExMTExMTExMTExMTExMTEifQ==";
+        Optimize.updatePropositions(Collections.singletonList(new DecisionScope(decisionScopeString)), null, null);
+        List<Event> eventsListEdge = TestHelper.getDispatchedEventsWith(OptimizeTestConstants.EventType.EDGE, OptimizeTestConstants.EventSource.REQUEST_CONTENT, 1000);
+        Assert.assertEquals(1, eventsListEdge.size());
+        Event edgeEvent = eventsListEdge.get(0);
+        final String requestEventId = edgeEvent.getUniqueIdentifier();
+        Assert.assertFalse(requestEventId.isEmpty());
+
+        // Send Edge response event
         final String edgeResponseData = "{\n" +
                 "                                  \"payload\": [\n" +
                 "                                    {\n" +
@@ -1219,7 +1313,7 @@ public class OptimizeFunctionalTests {
                 "                                        ]\n" +
                 "                                    }\n" +
                 "                                  ],\n" +
-                "                                \"requestEventId\": \"AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA\",\n" +
+                "                                \"requestEventId\":\"" + requestEventId + "\",\n" +
                 "                                \"requestId\": \"BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB\",\n" +
                 "                                \"type\": \"personalization:decisions\"\n" +
                 "                              }";
@@ -1239,6 +1333,20 @@ public class OptimizeFunctionalTests {
 
         Thread.sleep(1000);
 
+        // Send completion event
+        Map<String, Object> completionEventData = new HashMap<String, Object>() {
+            {
+                put("completedUpdateRequestForEventId", requestEventId);
+            }
+        };
+        Event completionEvent = new Event.Builder(
+                "Optimize Update Propositions Complete",
+                OptimizeTestConstants.EventType.OPTIMIZE,
+                OptimizeTestConstants.EventSource.CONTENT_COMPLETE).
+                setEventData(completionEventData).build();
+        MobileCore.dispatchEvent(completionEvent);
+
+        Thread.sleep(1000);
         TestHelper.resetTestExpectations();
         DecisionScope decisionScope = new DecisionScope(decisionScopeString);
         final Map<DecisionScope, Proposition> propositionMap = new HashMap<>();

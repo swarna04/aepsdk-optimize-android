@@ -14,10 +14,12 @@ package com.adobe.marketing.mobile.optimize;
 
 class OptimizeConstants {
     static final String LOG_TAG = "Optimize";
-    static final String EXTENSION_VERSION = "2.0.1";
+    static final String EXTENSION_VERSION = "2.0.2";
     static final String EXTENSION_NAME = "com.adobe.optimize";
     static final String FRIENDLY_NAME = "Optimize";
     static final long DEFAULT_RESPONSE_CALLBACK_TIMEOUT = 500L;
+    static final long GET_RESPONSE_CALLBACK_TIMEOUT = 10000L;
+    static final long EDGE_CONTENT_COMPLETE_RESPONSE_TIMEOUT = 5000L;
 
     static final String ACTIVITY_ID = "activityId";
     static final String XDM_ACTIVITY_ID = "xdm:activityId";
@@ -40,6 +42,7 @@ class OptimizeConstants {
         static final String EDGE_PERSONALIZATION_REQUEST = "Edge Optimize Personalization Request";
         static final String EDGE_PROPOSITION_INTERACTION_REQUEST = "Edge Optimize Proposition Interaction Request";
         static final String OPTIMIZE_RESPONSE = "Optimize Response";
+        static final String OPTIMIZE_UPDATE_COMPLETE = "Optimize Update Propositions Complete";
 
         private EventNames() {}
     }
@@ -60,6 +63,7 @@ class OptimizeConstants {
         static final String ERROR_RESPONSE_CONTENT = "com.adobe.eventSource.errorResponseContent";
         static final String NOTIFICATION = "com.adobe.eventSource.notification";
         static final String EDGE_PERSONALIZATION_DECISIONS = "personalization:decisions";
+        static final String CONTENT_COMPLETE = "com.adobe.eventSource.contentComplete";
 
         private EventSource() {}
     }
@@ -73,6 +77,8 @@ class OptimizeConstants {
         static final String PROPOSITIONS = "propositions";
         static final String RESPONSE_ERROR = "responseerror";
         static final String PROPOSITION_INTERACTIONS = "propositioninteractions";
+        static final String REQUEST_EVENT_ID = "requestEventId";
+        static final String COMPLETED_UPDATE_EVENT_ID = "completedUpdateRequestForEventId";
 
         private EventDataKeys() {}
     }
@@ -143,6 +149,8 @@ class OptimizeConstants {
         static final String DECISIONING_PROPOSITIONS_SCOPEDETAILS = "scopeDetails";
         static final String DECISIONING_PROPOSITIONS_ITEMS = "items";
         static final String DECISIONING_PROPOSITIONS_ITEMS_ID = "id";
+        static final String REQUEST = "request";
+        static final String REQUEST_SEND_COMPLETION = "sendCompletion";
 
         private JsonKeys() {}
     }
