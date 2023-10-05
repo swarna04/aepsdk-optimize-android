@@ -207,7 +207,7 @@ task platformFunctionalTestJacocoReport(type: JacocoReport, dependsOn: "createPh
 dependencies {
     implementation 'androidx.annotation:annotation:1.0.0'
 
-    implementation 'com.adobe.marketing.mobile:core:2.5.0'
+    implementation 'com.adobe.marketing.mobile:core:2.4.0'
 
     testImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
     testImplementation "org.mockito:mockito-core:${rootProject.ext.mockitoCoreVersion}"
