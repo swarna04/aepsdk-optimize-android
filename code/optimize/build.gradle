@@ -15,7 +15,6 @@ jacoco {
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
 
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
@@ -216,7 +215,7 @@ dependencies {
     testImplementation 'org.json:json:20180813'
 
     androidTestImplementation "androidx.test.ext:junit:${rootProject.ext.junitVersion}"
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
     androidTestImplementation 'com.adobe.marketing.mobile:edge:2.3.0'
     androidTestImplementation 'com.adobe.marketing.mobile:edgeidentity:2.0.1'
